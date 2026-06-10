@@ -159,4 +159,52 @@ describe('Réservations — contrôle de disponibilité par dates (IA mockée)',
     expect(reply.text).toContain('Réservation confirmée');
     expect(await countTransactions()).toHaveLength(4);
   });
+
+  test('bloc répété par l\'IA : fusionné dans la transaction existante, pas de doublon', async () => {
+    groq._completeWithKey = async () => aiConfirm('Dacia Logan', plusDays(2), plusDays(5));
+
+    const reply = await chatEngine.handleInboundMessage({
+      agentId: agent.id,
+      customerId: '212600000014@s.whatsapp.net',
+      text: 'Oui je confirme bien !',
+    });
+
+    expect(reply.text).toContain('Réservation confirmée'); // pas bloqué par sa propre réservation
+    expect(await countTransactions()).toHaveLength(4);
+  });
+
+  test('le client modifie ses dates : sa transaction est mise à jour, pas bloquée', async () => {
+    groq._completeWithKey = async () => aiConfirm('Dacia Logan', plusDays(3), plusDays(5));
+
+    const reply = await chatEngine.handleInboundMessage({
+      agentId: agent.id,
+      customerId: '212600000014@s.whatsapp.net',
+      text: `Finalement plutôt du ${plusDays(3)} au ${plusDays(5)}`,
+    });
+
+    expect(reply.text).toContain('Réservation confirmée');
+    const txs = await countTransactions();
+    expect(txs).toHaveLength(4);
+    const tx = txs.find((t) => t.customer_id === '212600000014@s.whatsapp.net');
+    expect(tx.data.start_date).toBe(plusDays(3));
+  });
+
+  test('un AUTRE véhicule dans la même fenêtre : transaction distincte, pas de fusion', async () => {
+    groq._completeWithKey = async () => aiConfirm('Renault Clio', plusDays(6), plusDays(9));
+
+    const reply = await chatEngine.handleInboundMessage({
+      agentId: agent.id,
+      customerId: '212600000014@s.whatsapp.net',
+      text: `Ajoutez aussi une Clio du ${plusDays(6)} au ${plusDays(9)}`,
+    });
+
+    expect(reply.text).toContain('Réservation confirmée');
+    const txs = await countTransactions();
+    expect(txs).toHaveLength(5);
+    const items = txs
+      .filter((t) => t.customer_id === '212600000014@s.whatsapp.net')
+      .map((t) => t.data.item)
+      .sort();
+    expect(items).toEqual(['Dacia Logan', 'Renault Clio']);
+  });
 });
