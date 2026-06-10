@@ -1,0 +1,110 @@
+// Schéma BotFlow — cahier des charges §6.5.
+// Convention : modèles PascalCase, champs en snake_case (identiques aux
+// colonnes du cahier des charges) pour rester cohérent avec l'API et le frontend.
+// Les validations d'énumérations (status, role, transaction_type...) sont
+// applicatives : SQLite + Prisma ne génèrent pas de CHECK, et cela permet
+// d'étendre les valeurs (nouveaux canaux, nouvelles formules) sans migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id             String   @id @default(uuid())
+  name           String
+  owner_email    String   @unique
+  owner_password String
+  plan           String   @default("starter")
+  max_agents     Int      @default(3)
+  created_at     DateTime @default(now())
+
+  members       Member[]
+  agents        Agent[]
+  conversations Conversation[]
+  transactions  Transaction[]
+
+  @@map("organizations")
+}
+
+model Member {
+  id         String   @id @default(uuid())
+  org_id     String
+  email      String   @unique
+  password   String
+  role       String   @default("member") // owner | admin | member
+  created_at DateTime @default(now())
+
+  org Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+
+  @@index([org_id])
+  @@map("members")
+}
+
+model Agent {
+  id               String   @id @default(uuid())
+  org_id           String
+  name             String
+  description      String?
+  business_type    String?  @default("other") // car_rental | product_store | restaurant | real_estate | other
+  status           String   @default("active") // active | paused
+  whatsapp_number  String?
+  whatsapp_status  String   @default("disconnected") // disconnected | connecting | connected
+  data_source_type String? // google_sheets | excel | pdf | website
+  source_ref       String?
+  sheet_columns    String? // JSON : colonnes détectées
+  sheet_analysis   String? // JSON : mapping IA
+  ai_provider      String?  @default("groq") // groq | gemini
+  ai_tokens        String   @default("[]") // JSON : clé primaire + clés de secours
+  ai_model         String?
+  created_at       DateTime @default(now())
+
+  org           Organization   @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  transactions  Transaction[]
+
+  @@index([org_id])
+  @@map("agents")
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  agent_id        String
+  org_id          String
+  channel         String    @default("whatsapp") // whatsapp | instagram | messenger | tiktok | voice
+  customer_id     String
+  customer_name   String?
+  messages        String    @default("[]") // JSON : [{role, content, timestamp}]
+  last_message_at DateTime?
+
+  agent Agent        @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  org   Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+
+  @@unique([agent_id, channel, customer_id])
+  @@index([agent_id])
+  @@index([org_id])
+  @@map("conversations")
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  agent_id         String
+  org_id           String
+  customer_id      String?
+  customer_name    String?
+  transaction_type String   @default("inquiry") // reservation | order | inquiry
+  data             String   @default("{}") // JSON : champs dynamiques selon le métier
+  status           String   @default("pending") // pending | confirmed | cancelled
+  created_at       DateTime @default(now())
+
+  agent Agent        @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  org   Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+
+  @@index([agent_id])
+  @@index([org_id])
+  @@map("transactions")
+}

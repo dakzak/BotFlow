@@ -1,0 +1,19 @@
+# Dépendances
+node_modules/
+
+# Secrets — ne JAMAIS committer
+.env
+
+# Données locales (base SQLite + sessions WhatsApp par agent)
+data/
+sessions/
+
+# Tests
+coverage/
+tests/.tmp-sessions/
+tests/.tmp/
+
+# Divers
+*.log
+.DS_Store
+Thumbs.db

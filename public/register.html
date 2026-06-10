@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BotFlow — Créer un compte</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-md" x-data="registerForm()">
+    <a href="/" class="block text-center text-2xl font-bold mb-8">🤖 Bot<span class="text-emerald-400">Flow</span></a>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-8">
+      <h1 class="text-xl font-bold mb-6">Créer votre organisation</h1>
+
+      <template x-if="error">
+        <div class="bg-red-500/10 border border-red-500/40 text-red-300 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+      </template>
+
+      <form @submit.prevent="submit()">
+        <label class="block text-sm text-slate-400 mb-1">Nom de l'entreprise / organisation</label>
+        <input x-model="orgName" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:border-emerald-500" placeholder="Atlas Location" />
+
+        <label class="block text-sm text-slate-400 mb-1">E-mail</label>
+        <input x-model="email" type="email" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:border-emerald-500" placeholder="vous@entreprise.com" />
+
+        <label class="block text-sm text-slate-400 mb-1">Mot de passe (8 caractères min.)</label>
+        <input x-model="password" type="password" required minlength="8" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-6 focus:outline-none focus:border-emerald-500" />
+
+        <button type="submit" :disabled="loading" class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2.5 rounded-lg">
+          <span x-text="loading ? 'Création...' : 'Créer mon compte'"></span>
+        </button>
+      </form>
+
+      <p class="text-sm text-slate-400 mt-6 text-center">
+        Déjà un compte ? <a href="/login.html" class="text-emerald-400 hover:underline">Se connecter</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    function registerForm() {
+      return {
+        orgName: '', email: '', password: '', error: '', loading: false,
+        async submit() {
+          this.error = '';
+          this.loading = true;
+          try {
+            const resp = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orgName: this.orgName, email: this.email, password: this.password }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Erreur ' + resp.status);
+            localStorage.setItem('botflow_token', data.token);
+            location.href = '/dashboard.html';
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+      };
+    }
+  </script>
+</body>
+</html>
