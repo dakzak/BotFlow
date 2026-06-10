@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BotFlow — Transactions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/js/common.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-900" x-data="transactionsPage()" x-init="init()">
+
+  <header class="bg-slate-950 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
+        <button @click="logout()" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-12 gap-6">
+
+    <aside class="col-span-12 md:col-span-3">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-bold">Mes agents</h2>
+          <span class="text-xs text-slate-500" x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
+        </div>
+        <template x-for="agent in agents" :key="agent.id">
+          <button @click="selectAgent(agent)"
+            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
+            :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
+            <div class="font-medium" x-text="agent.name"></div>
+            <div class="text-xs flex items-center gap-1.5 mt-0.5">
+              <span class="inline-block w-2 h-2 rounded-full"
+                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+              <span class="text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Déconnecté'"></span>
+            </div>
+          </button>
+        </template>
+        <a href="/agent-nouveau.html" class="block text-center w-full mt-3 bg-slate-950 hover:bg-slate-800 text-white rounded-lg py-2.5 font-medium">+ Nouvel agent</a>
+      </div>
+    </aside>
+
+    <main class="col-span-12 md:col-span-9">
+      <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+        <template x-for="t in tabs" :key="t.id">
+          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
+            :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            x-text="t.label"></a>
+        </template>
+      </nav>
+
+      <template x-if="error">
+        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+      </template>
+
+      <template x-if="!current">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
+          <p class="text-sm">Aucun agent — <a href="/agent-nouveau.html" class="text-emerald-600 hover:underline">créez-en un</a> pour voir ses transactions.</p>
+        </div>
+      </template>
+
+      <template x-if="current">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold">Réservations / commandes</h3>
+            <div class="flex gap-2 items-center">
+              <select x-model="txFilter" @change="loadTransactions()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+                <option value="">Tous statuts</option>
+                <option value="pending">En attente</option>
+                <option value="confirmed">Confirmé</option>
+                <option value="cancelled">Annulé</option>
+              </select>
+              <button @click="exportCsv()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 text-sm">Export CSV</button>
+            </div>
+          </div>
+          <template x-if="!transactions.length">
+            <p class="text-sm text-slate-500">Aucune transaction.</p>
+          </template>
+          <template x-for="tx in transactions" :key="tx.id">
+            <div class="border-t border-slate-100 py-3 flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <div class="text-sm font-medium">
+                  <span x-text="tx.transaction_type"></span> —
+                  <span x-text="tx.customer_name || tx.customer_id"></span>
+                </div>
+                <div class="text-xs text-slate-500 mt-1 break-all" x-text="JSON.stringify(tx.data)"></div>
+                <div class="text-xs text-slate-400 mt-1" x-text="formatDate(tx.created_at)"></div>
+              </div>
+              <select :value="tx.status" @change="setTxStatus(tx, $event.target.value)"
+                class="border rounded-lg px-2 py-1 text-xs"
+                :class="{'border-amber-400 text-amber-700': tx.status==='pending', 'border-emerald-400 text-emerald-700': tx.status==='confirmed', 'border-red-300 text-red-600': tx.status==='cancelled'}">
+                <option value="pending">En attente</option>
+                <option value="confirmed">Confirmé</option>
+                <option value="cancelled">Annulé</option>
+              </select>
+            </div>
+          </template>
+        </div>
+      </template>
+    </main>
+  </div>
+
+  <script>
+    function transactionsPage() {
+      return {
+        ...baseApp('transactions'),
+        transactions: [],
+        txFilter: '',
+
+        async init() {
+          if (await this.initBase()) this.onAgentChange();
+        },
+
+        onAgentChange() {
+          this.transactions = [];
+          this.loadTransactions();
+        },
+
+        async loadTransactions() {
+          if (!this.current) return;
+          try {
+            const q = this.txFilter ? '?status=' + this.txFilter : '';
+            this.transactions = await this.api('/agents/' + this.current.id + '/transactions' + q);
+          } catch (err) { this.error = err.message; }
+        },
+
+        async setTxStatus(tx, status) {
+          try {
+            await this.api('/transactions/' + tx.id, { method: 'PATCH', body: { status } });
+            tx.status = status;
+          } catch (err) { this.error = err.message; }
+        },
+
+        async exportCsv() {
+          const resp = await fetch('/api/agents/' + this.current.id + '/transactions/export.csv', {
+            headers: { Authorization: 'Bearer ' + this.token },
+          });
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'transactions.csv';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        },
+      };
+    }
+  </script>
+</body>
+</html>

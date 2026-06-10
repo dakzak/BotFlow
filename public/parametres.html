@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BotFlow — Paramètres</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/js/common.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-900" x-data="parametresPage()" x-init="init()">
+
+  <header class="bg-slate-950 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
+        <button @click="logout()" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-12 gap-6">
+
+    <aside class="col-span-12 md:col-span-3">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-bold">Mes agents</h2>
+          <span class="text-xs text-slate-500" x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
+        </div>
+        <template x-for="agent in agents" :key="agent.id">
+          <button @click="selectAgent(agent)"
+            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
+            :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
+            <div class="font-medium" x-text="agent.name"></div>
+            <div class="text-xs flex items-center gap-1.5 mt-0.5">
+              <span class="inline-block w-2 h-2 rounded-full"
+                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+              <span class="text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Déconnecté'"></span>
+            </div>
+          </button>
+        </template>
+        <a href="/agent-nouveau.html" class="block text-center w-full mt-3 bg-slate-950 hover:bg-slate-800 text-white rounded-lg py-2.5 font-medium">+ Nouvel agent</a>
+      </div>
+    </aside>
+
+    <main class="col-span-12 md:col-span-9">
+      <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+        <template x-for="t in tabs" :key="t.id">
+          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
+            :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            x-text="t.label"></a>
+        </template>
+      </nav>
+
+      <template x-if="error">
+        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+      </template>
+      <template x-if="success">
+        <div class="bg-emerald-50 border border-emerald-300 text-emerald-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="success"></div>
+      </template>
+
+      <template x-if="!current">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
+          <p class="text-sm">Aucun agent — <a href="/agent-nouveau.html" class="text-emerald-600 hover:underline">créez-en un</a> pour le configurer.</p>
+        </div>
+      </template>
+
+      <template x-if="current">
+        <div class="space-y-4">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <h3 class="font-bold mb-4">Identité & source de données</h3>
+            <label class="block text-sm text-slate-600 mb-1">Nom de l'agent</label>
+            <input x-model="settings.name" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" />
+            <label class="block text-sm text-slate-600 mb-1">Description de l'activité (l'IA s'en sert pour comprendre le métier)</label>
+            <textarea x-model="settings.description" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3"></textarea>
+            <label class="block text-sm text-slate-600 mb-1">URL Google Sheets (partage « toute personne disposant du lien »)</label>
+            <input x-model="settings.source_ref" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" placeholder="https://docs.google.com/spreadsheets/d/..." />
+            <label class="block text-sm text-slate-600 mb-1">Statut de l'agent</label>
+            <select x-model="settings.status" class="border border-slate-300 rounded-lg px-3 py-2">
+              <option value="active">Actif</option>
+              <option value="paused">En pause</option>
+            </select>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <h3 class="font-bold mb-4">Intelligence artificielle</h3>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-sm text-slate-600 mb-1">Fournisseur</label>
+                <select x-model="settings.ai_provider" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                  <option value="groq">Groq</option>
+                  <option value="gemini">Google Gemini</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-600 mb-1">Modèle</label>
+                <input x-model="settings.ai_model" class="w-full border border-slate-300 rounded-lg px-3 py-2" :placeholder="settings.ai_provider === 'gemini' ? 'gemini-2.0-flash' : 'llama-3.1-8b-instant'" />
+              </div>
+            </div>
+            <label class="block text-sm text-slate-600 mb-1">
+              Clés d'API <span class="text-slate-400">(1ère = primaire, suivantes = secours · laisser vide pour garder les <span x-text="current.ai_keys_count"></span> clé(s) actuelle(s))</span>
+            </label>
+            <template x-for="(k, i) in settings.keys" :key="i">
+              <div class="flex gap-2 mb-2">
+                <input x-model="settings.keys[i]" type="password" class="flex-1 border border-slate-300 rounded-lg px-3 py-2" :placeholder="'Clé ' + (i + 1)" />
+                <button @click="settings.keys.splice(i, 1)" class="border border-slate-300 rounded-lg px-3 text-slate-500 hover:bg-slate-50">✕</button>
+              </div>
+            </template>
+            <button @click="settings.keys.push('')" class="text-sm text-emerald-600 hover:underline">+ Ajouter une clé</button>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <h3 class="font-bold mb-2">Canal WhatsApp</h3>
+            <p class="text-sm text-slate-500 mb-3">
+              Statut : <span class="font-medium" x-text="statusLabel(current.whatsapp_status)"></span> —
+              la connexion (QR code) se fait depuis la <a href="/dashboard.html" class="text-emerald-600 hover:underline">Vue d'ensemble</a>.
+            </p>
+            <button @click="disconnectChannel()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm">Déconnecter et oublier la session</button>
+          </div>
+
+          <div class="flex gap-3">
+            <button @click="saveSettings()" class="bg-slate-950 hover:bg-slate-800 text-white rounded-lg px-5 py-2.5 font-medium">Enregistrer</button>
+            <button @click="deleteAgent()" class="border border-red-300 text-red-600 hover:bg-red-50 rounded-lg px-5 py-2.5">Supprimer l'agent</button>
+          </div>
+        </div>
+      </template>
+    </main>
+  </div>
+
+  <script>
+    function parametresPage() {
+      return {
+        ...baseApp('parametres'),
+        success: '',
+        settings: { name: '', description: '', source_ref: '', status: 'active', ai_provider: 'groq', ai_model: '', keys: [] },
+
+        async init() {
+          if (await this.initBase()) this.onAgentChange();
+        },
+
+        onAgentChange() {
+          this.success = '';
+          if (!this.current) return;
+          this.settings = {
+            name: this.current.name,
+            description: this.current.description || '',
+            source_ref: this.current.source_ref || '',
+            status: this.current.status,
+            ai_provider: this.current.ai_provider || 'groq',
+            ai_model: this.current.ai_model || '',
+            keys: [],
+          };
+        },
+
+        async saveSettings() {
+          this.error = '';
+          this.success = '';
+          try {
+            const body = {
+              name: this.settings.name,
+              description: this.settings.description,
+              source_ref: this.settings.source_ref,
+              status: this.settings.status,
+              ai_provider: this.settings.ai_provider,
+              ai_model: this.settings.ai_model,
+            };
+            const keys = this.settings.keys.map((k) => k.trim()).filter(Boolean);
+            if (keys.length) body.ai_tokens = keys;
+            this.current = await this.api('/agents/' + this.current.id, { method: 'PATCH', body });
+            await this.loadAgents();
+            this.settings.keys = [];
+            this.success = 'Paramètres enregistrés ✅';
+          } catch (err) { this.error = err.message; }
+        },
+
+        async disconnectChannel() {
+          try {
+            await this.api('/agents/' + this.current.id + '/channel/disconnect', { method: 'POST', body: { clearSession: true } });
+            this.current.whatsapp_status = 'disconnected';
+            this.success = 'Canal déconnecté.';
+          } catch (err) { this.error = err.message; }
+        },
+
+        async deleteAgent() {
+          if (!confirm('Supprimer définitivement cet agent, ses conversations et sa session WhatsApp ?')) return;
+          try {
+            await this.api('/agents/' + this.current.id, { method: 'DELETE' });
+            localStorage.removeItem('botflow_agent_id');
+            location.href = '/dashboard.html';
+          } catch (err) { this.error = err.message; }
+        },
+      };
+    }
+  </script>
+</body>
+</html>

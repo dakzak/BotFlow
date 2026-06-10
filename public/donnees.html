@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BotFlow — Données</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/js/common.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-900" x-data="donneesPage()" x-init="init()">
+
+  <header class="bg-slate-950 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
+        <button @click="logout()" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-12 gap-6">
+
+    <aside class="col-span-12 md:col-span-3">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-bold">Mes agents</h2>
+          <span class="text-xs text-slate-500" x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
+        </div>
+        <template x-for="agent in agents" :key="agent.id">
+          <button @click="selectAgent(agent)"
+            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
+            :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
+            <div class="font-medium" x-text="agent.name"></div>
+            <div class="text-xs flex items-center gap-1.5 mt-0.5">
+              <span class="inline-block w-2 h-2 rounded-full"
+                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+              <span class="text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Déconnecté'"></span>
+            </div>
+          </button>
+        </template>
+        <a href="/agent-nouveau.html" class="block text-center w-full mt-3 bg-slate-950 hover:bg-slate-800 text-white rounded-lg py-2.5 font-medium">+ Nouvel agent</a>
+      </div>
+    </aside>
+
+    <main class="col-span-12 md:col-span-9">
+      <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+        <template x-for="t in tabs" :key="t.id">
+          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
+            :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            x-text="t.label"></a>
+        </template>
+      </nav>
+
+      <template x-if="error">
+        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+      </template>
+
+      <template x-if="!current">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
+          <p class="text-sm">Aucun agent — <a href="/agent-nouveau.html" class="text-emerald-600 hover:underline">créez-en un</a> pour connecter une source de données.</p>
+        </div>
+      </template>
+
+      <template x-if="current">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold">Source de données</h3>
+            <div class="flex gap-2">
+              <a x-show="current.source_ref" :href="current.source_ref" target="_blank" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 text-sm">Ouvrir la source</a>
+              <button @click="loadPreview()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 text-sm">Actualiser</button>
+            </div>
+          </div>
+          <template x-if="loading">
+            <p class="text-sm text-slate-500">Chargement de l'aperçu...</p>
+          </template>
+          <template x-if="!loading && !preview">
+            <p class="text-sm text-slate-500">
+              Aucune source configurée pour cet agent —
+              <a href="/parametres.html" class="text-emerald-600 hover:underline">ajoutez l'URL Google Sheets dans Paramètres</a>.
+            </p>
+          </template>
+          <template x-if="preview">
+            <div class="overflow-x-auto">
+              <p class="text-xs text-slate-500 mb-2" x-text="preview.total + ' lignes au total — aperçu des ' + preview.rows.length + ' premières'"></p>
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left border-b border-slate-200">
+                    <template x-for="h in preview.headers" :key="h">
+                      <th class="py-2 pr-4 font-semibold" x-text="h"></th>
+                    </template>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="(row, i) in preview.rows" :key="i">
+                    <tr class="border-b border-slate-100">
+                      <template x-for="h in preview.headers" :key="h">
+                        <td class="py-1.5 pr-4 text-slate-600" x-text="row[h]"></td>
+                      </template>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </div>
+      </template>
+    </main>
+  </div>
+
+  <script>
+    function donneesPage() {
+      return {
+        ...baseApp('donnees'),
+        preview: null,
+        loading: false,
+
+        async init() {
+          if (await this.initBase()) this.onAgentChange();
+        },
+
+        onAgentChange() {
+          this.preview = null;
+          this.loadPreview();
+        },
+
+        async loadPreview() {
+          if (!this.current || !this.current.source_ref) { this.preview = null; return; }
+          this.loading = true;
+          this.preview = null;
+          try { this.preview = await this.api('/agents/' + this.current.id + '/datasource/preview?limit=20'); }
+          catch (err) { this.error = err.message; }
+          finally { this.loading = false; }
+        },
+      };
+    }
+  </script>
+</body>
+</html>

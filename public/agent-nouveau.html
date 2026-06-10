@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BotFlow — Nouvel agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/js/common.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-900" x-data="wizardPage()" x-init="init()">
+
+  <header class="bg-slate-950 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
+        <a href="/dashboard.html" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">← Tableau de bord</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-2xl mx-auto px-4 py-10">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <h1 class="text-lg font-bold mb-6" x-text="'Nouvel agent — étape ' + step + '/5'"></h1>
+
+      <div class="flex gap-1.5 mb-6">
+        <template x-for="s in 5" :key="s">
+          <div class="h-1.5 flex-1 rounded-full" :class="s <= step ? 'bg-emerald-500' : 'bg-slate-200'"></div>
+        </template>
+      </div>
+
+      <template x-if="error">
+        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+      </template>
+
+      <!-- Étape 1 : identité -->
+      <div x-show="step === 1">
+        <label class="block text-sm text-slate-600 mb-1">Nom de l'entreprise / de l'agent</label>
+        <input x-model="form.name" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4" placeholder="Bot Ventes Atlas" />
+        <label class="block text-sm text-slate-600 mb-1">Description de l'activité <span class="text-red-500">*</span></label>
+        <textarea x-model="form.description" rows="5" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-2"
+          placeholder="Nous sommes une agence de location de voitures à Casablanca et Agadir. Nous proposons des véhicules économiques, familiaux et de luxe, réservables à la journée. Prix en dirhams."></textarea>
+        <p class="text-xs text-slate-500">⚠️ Élément critique : l'IA s'appuie sur cette description pour comprendre votre métier.</p>
+      </div>
+
+      <!-- Étape 2 : source de données -->
+      <div x-show="step === 2">
+        <label class="block text-sm text-slate-600 mb-1">URL de votre Google Sheet (public)</label>
+        <input x-model="form.source_ref" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-2" placeholder="https://docs.google.com/spreadsheets/d/..." />
+        <p class="text-xs text-slate-500 mb-4">Partage requis : « Toute personne disposant du lien peut consulter ».</p>
+        <button @click="analyzeSheet()" :disabled="loading" class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-medium mb-4">
+          <span x-text="loading ? 'Analyse...' : 'Analyser la feuille'"></span>
+        </button>
+        <template x-if="analysis">
+          <div>
+            <p class="text-sm font-medium mb-2" x-text="analysis.rowCount + ' lignes détectées. Confirmez le sens de chaque colonne :'"></p>
+            <template x-for="h in analysis.headers" :key="h">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="w-1/2 text-sm font-medium truncate" x-text="h"></span>
+                <select x-model="analysis.mapping[h]" class="flex-1 border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+                  <option value="name">Nom / titre</option>
+                  <option value="price">Prix</option>
+                  <option value="city">Ville / lieu</option>
+                  <option value="category">Catégorie</option>
+                  <option value="availability">Disponibilité</option>
+                  <option value="image_url">URL d'image</option>
+                  <option value="description">Description</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- Étape 3 : paramètres IA -->
+      <div x-show="step === 3">
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Fournisseur d'IA</label>
+            <select x-model="form.ai_provider" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+              <option value="groq">Groq</option>
+              <option value="gemini">Google Gemini</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Modèle</label>
+            <input x-model="form.ai_model" class="w-full border border-slate-300 rounded-lg px-3 py-2" :placeholder="form.ai_provider === 'gemini' ? 'gemini-2.0-flash' : 'llama-3.1-8b-instant'" />
+          </div>
+        </div>
+        <label class="block text-sm text-slate-600 mb-1">Clés d'API (la 1ère est primaire, les autres en secours)</label>
+        <template x-for="(k, i) in form.keys" :key="i">
+          <div class="flex gap-2 mb-2">
+            <input x-model="form.keys[i]" type="password" class="flex-1 border border-slate-300 rounded-lg px-3 py-2" :placeholder="'Clé ' + (i + 1)" />
+            <button @click="testKey(i)" :disabled="loading" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 text-sm">Tester</button>
+            <button x-show="form.keys.length > 1" @click="form.keys.splice(i, 1)" class="border border-slate-300 rounded-lg px-3 text-slate-500">✕</button>
+          </div>
+        </template>
+        <button @click="form.keys.push('')" class="text-sm text-emerald-600 hover:underline">+ Ajouter une clé de secours</button>
+        <p x-show="keyTestResult" class="text-sm mt-3" :class="keyTestResult === 'ok' ? 'text-emerald-600' : 'text-red-600'"
+          x-text="keyTestResult === 'ok' ? '✅ Clé valide' : '❌ Clé invalide ou quota dépassé'"></p>
+      </div>
+
+      <!-- Étape 4 : connexion WhatsApp -->
+      <div x-show="step === 4">
+        <label class="block text-sm text-slate-600 mb-1">Numéro WhatsApp de l'entreprise</label>
+        <input x-model="form.whatsapp_number" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4" placeholder="2126XXXXXXXX" />
+        <button @click="connectChannel()" :disabled="loading" class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-medium mb-4">Connecter WhatsApp</button>
+        <div class="text-sm mb-3 flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full"
+            :class="channel.status === 'connected' ? 'bg-emerald-500' : (channel.status === 'disconnected' ? 'bg-red-400' : 'bg-amber-400')"></span>
+          <span x-text="statusLabel(channel.status)"></span>
+        </div>
+        <div x-show="channel.qr && channel.status !== 'connected'" class="text-center border border-slate-200 rounded-xl p-4">
+          <p class="text-sm text-slate-600 mb-3">Scannez avec WhatsApp → Appareils connectés :</p>
+          <img :src="channel.qr" class="mx-auto w-52 h-52" alt="QR code WhatsApp" />
+        </div>
+        <p x-show="channel.status === 'connected'" class="text-emerald-600 font-medium">✅ WhatsApp connecté ! La session est sauvegardée et survivra aux redémarrages.</p>
+      </div>
+
+      <!-- Étape 5 : récapitulatif -->
+      <div x-show="step === 5">
+        <div class="bg-slate-50 rounded-xl p-4 text-sm space-y-2 mb-4">
+          <div><span class="text-slate-500">Agent :</span> <span class="font-medium" x-text="form.name"></span></div>
+          <div><span class="text-slate-500">Source :</span> <span class="font-medium" x-text="form.source_ref || 'non configurée'"></span></div>
+          <div><span class="text-slate-500">IA :</span> <span class="font-medium" x-text="form.ai_provider + (form.ai_model ? ' · ' + form.ai_model : '')"></span></div>
+          <div><span class="text-slate-500">WhatsApp :</span> <span class="font-medium" x-text="statusLabel(channel.status)"></span></div>
+        </div>
+        <label class="block text-sm text-slate-600 mb-1">Envoyer un message de test à un numéro :</label>
+        <div class="flex gap-2 mb-2">
+          <input x-model="testNumber" class="flex-1 border border-slate-300 rounded-lg px-3 py-2" placeholder="2126XXXXXXXX" />
+          <button @click="sendTestMessage()" :disabled="loading" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-4 text-sm">Envoyer</button>
+        </div>
+        <p x-show="testSent" class="text-sm text-emerald-600">✅ Message de test envoyé.</p>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex justify-between mt-8">
+        <button x-show="step > 1" @click="step--" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-5 py-2.5">← Précédent</button>
+        <span x-show="step === 1"></span>
+        <button x-show="step < 5" @click="next()" :disabled="loading" class="bg-slate-950 hover:bg-slate-800 disabled:opacity-50 text-white rounded-lg px-5 py-2.5 font-medium">Suivant →</button>
+        <button x-show="step === 5" @click="finish()" class="bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg px-5 py-2.5 font-medium">Terminer ✅</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function wizardPage() {
+      return {
+        ...baseApp('wizard'),
+        step: 1,
+        agentId: null,
+        loading: false,
+        analysis: null,
+        keyTestResult: '',
+        testNumber: '',
+        testSent: false,
+        channel: { status: 'disconnected', qr: null },
+        pollTimer: null,
+        form: { name: '', description: '', source_ref: '', ai_provider: 'groq', ai_model: '', keys: [''], whatsapp_number: '' },
+
+        async init() {
+          if (!this.token) { location.href = '/login.html'; return; }
+          try { this.org = await this.api('/org'); } catch (err) { this.error = err.message; }
+        },
+
+        async next() {
+          this.error = '';
+          try {
+            if (this.step === 1) {
+              if (!this.form.name || !this.form.description) {
+                this.error = 'Le nom et la description sont requis.';
+                return;
+              }
+              if (!this.agentId) {
+                const agent = await this.api('/agents', {
+                  method: 'POST',
+                  body: { name: this.form.name, description: this.form.description },
+                });
+                this.agentId = agent.id;
+                localStorage.setItem('botflow_agent_id', agent.id);
+              } else {
+                await this.api('/agents/' + this.agentId, {
+                  method: 'PATCH',
+                  body: { name: this.form.name, description: this.form.description },
+                });
+              }
+            }
+            if (this.step === 2 && this.analysis) {
+              await this.api('/agents/' + this.agentId + '/datasource/mapping', {
+                method: 'POST',
+                body: { mapping: this.analysis.mapping },
+              });
+            }
+            if (this.step === 3) {
+              const keys = this.form.keys.map((k) => k.trim()).filter(Boolean);
+              if (!keys.length) { this.error = 'Au moins une clé d\'API est requise.'; return; }
+              await this.api('/agents/' + this.agentId, {
+                method: 'PATCH',
+                body: { ai_provider: this.form.ai_provider, ai_model: this.form.ai_model || null, ai_tokens: keys },
+              });
+            }
+            this.step++;
+            if (this.step === 4) this.startPolling();
+          } catch (err) {
+            this.error = err.message;
+          }
+        },
+
+        async analyzeSheet() {
+          this.error = '';
+          if (!this.form.source_ref) { this.error = 'Indiquez l\'URL du Google Sheet.'; return; }
+          this.loading = true;
+          try {
+            this.analysis = await this.api('/agents/' + this.agentId + '/datasource/analyze', {
+              method: 'POST',
+              body: { type: 'google_sheets', ref: this.form.source_ref },
+            });
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async testKey(i) {
+          const key = this.form.keys[i] && this.form.keys[i].trim();
+          if (!key) return;
+          this.loading = true;
+          this.keyTestResult = '';
+          try {
+            const r = await this.api('/agents/' + this.agentId + '/ai/test', {
+              method: 'POST',
+              body: { provider: this.form.ai_provider, apiKey: key, model: this.form.ai_model || undefined },
+            });
+            this.keyTestResult = r.ok ? 'ok' : 'fail';
+          } catch {
+            this.keyTestResult = 'fail';
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async connectChannel() {
+          this.error = '';
+          try {
+            await this.api('/agents/' + this.agentId + '/channel/connect', {
+              method: 'POST',
+              body: { whatsapp_number: this.form.whatsapp_number },
+            });
+            this.startPolling();
+          } catch (err) { this.error = err.message; }
+        },
+
+        startPolling() {
+          if (this.pollTimer) clearInterval(this.pollTimer);
+          const poll = async () => {
+            if (!this.agentId) return;
+            try { this.channel = await this.api('/agents/' + this.agentId + '/channel/status'); }
+            catch { /* on retentera */ }
+          };
+          poll();
+          this.pollTimer = setInterval(poll, 3000);
+        },
+
+        async sendTestMessage() {
+          this.error = '';
+          this.testSent = false;
+          if (!this.testNumber) return;
+          this.loading = true;
+          try {
+            await this.api('/agents/' + this.agentId + '/channel/test-message', {
+              method: 'POST',
+              body: { to: this.testNumber },
+            });
+            this.testSent = true;
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        finish() {
+          location.href = '/dashboard.html';
+        },
+      };
+    }
+  </script>
+</body>
+</html>
