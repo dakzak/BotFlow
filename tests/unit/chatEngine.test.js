@@ -5,6 +5,8 @@ const {
   parseISODate,
   extractBooking,
   findConflict,
+  detectLanguage,
+  cleanActionData,
 } = require('../../src/services/chatEngine');
 
 describe('parseAIResponse — extraction du bloc transaction', () => {
@@ -75,6 +77,62 @@ describe('parseAIResponse — extraction du bloc transaction', () => {
     const r = parseAIResponse(raw);
     expect(r.text).toBe(raw);
     expect(r.action).toBeNull();
+  });
+
+  test('clôture ```json OUVERTE mais jamais fermée : action extraite, texte propre', () => {
+    const raw = 'Réservation confirmée !\n```json\n{"action": "order", "data": {"produit": "Tajine"}}';
+    const r = parseAIResponse(raw);
+    expect(r.text).toBe('Réservation confirmée !');
+    expect(r.action.action).toBe('order');
+  });
+
+  test('clôture ouverte avec JSON tronqué : le client ne voit JAMAIS de ```', () => {
+    const raw = 'Voici nos voitures disponibles.\n```json\n{"action": "reserv';
+    const r = parseAIResponse(raw);
+    expect(r.text).toBe('Voici nos voitures disponibles.');
+    expect(r.text).not.toContain('```');
+    expect(r.action).toBeNull();
+  });
+
+  test('restes de ``` isolés : nettoyés du texte final', () => {
+    const r = parseAIResponse('Bonne journée !\n```');
+    expect(r.text).toBe('Bonne journée !');
+  });
+});
+
+describe('detectLanguage — suivi de la langue de chaque client', () => {
+  test('écriture arabe -> darija/arabe', () => {
+    expect(detectLanguage('واش كاينة طوموبيل اليوم؟')).toContain('écriture arabe');
+  });
+
+  test('darija en alphabet latin', () => {
+    expect(detectLanguage('wach kayna chi tomobil disponible ?')).toBe('darija marocaine (alphabet latin)');
+    expect(detectLanguage('wakha nakhdha la Clio')).toBe('darija marocaine (alphabet latin)');
+  });
+
+  test('anglais', () => {
+    expect(detectLanguage('How much is the car per day?')).toBe('anglais');
+  });
+
+  test('français par défaut', () => {
+    expect(detectLanguage('Bonjour, je veux louer une voiture à Casablanca')).toBe('français');
+  });
+});
+
+describe('cleanActionData — jamais de champs vides en base', () => {
+  test('retire "" / null / undefined, garde le reste', () => {
+    expect(cleanActionData({
+      item: 'Dacia Logan',
+      start_date: '',
+      end_date: '  ',
+      ville: null,
+      prix: 250,
+      note: undefined,
+    })).toEqual({ item: 'Dacia Logan', prix: 250 });
+  });
+
+  test('entrée absente -> objet vide', () => {
+    expect(cleanActionData(null)).toEqual({});
   });
 });
 

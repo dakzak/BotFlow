@@ -41,9 +41,20 @@ function parseAIResponse(raw) {
   let jsonStr = null;
 
   const fenceMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+  const openFence = fenceMatch ? null : text.match(/```(?:json)?\s*(\{[\s\S]*)$/i);
   if (fenceMatch) {
     jsonStr = fenceMatch[1];
     text = text.replace(fenceMatch[0], '').trim();
+  } else if (openFence) {
+    // clôture ``` ouverte mais jamais fermée (sortie tronquée) : ce fragment
+    // ne doit JAMAIS partir au client — on le retire du texte dans tous les
+    // cas, et on tente quand même d'en extraire l'action.
+    const candidate = openFence[1].replace(/`+\s*$/, '').trim();
+    try {
+      JSON.parse(candidate);
+      jsonStr = candidate;
+    } catch { /* fragment incomplet : ignoré */ }
+    text = text.slice(0, openFence.index).trim();
   } else {
     // JSON brut en fin de réponse : on cherche la première accolade ouvrante
     // telle que tout le reste de la chaîne soit un objet JSON valide.
@@ -78,6 +89,9 @@ function parseAIResponse(raw) {
       // bloc malformé : on garde uniquement le texte
     }
   }
+
+  // aucun reste de clôture Markdown (```json, ```) ne doit partir au client
+  text = text.replace(/```(?:json)?/gi, '').trim();
 
   return { text, action, mediaUrl };
 }
@@ -156,6 +170,53 @@ function extractBooking(data) {
 
 const normalizeItem = (s) => s.toLowerCase().replace(/\s+/g, ' ').trim();
 
+/** Retire les champs vides ("" / null / undefined) d'un data de transaction. */
+function cleanActionData(data) {
+  const out = {};
+  for (const [k, v] of Object.entries(data || {})) {
+    if (v === null || v === undefined) continue;
+    if (typeof v === 'string' && !v.trim()) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+// Mots darija (alphabet latin) suffisamment distinctifs pour identifier la
+// langue d'un message ; volontairement sans mots ambigus avec le français.
+const DARIJA_LATIN_MARKERS = [
+  'wach', 'wash', 'wakha', 'bghit', 'bghina', 'kayn', 'kayna', 'kaynin',
+  'chhal', 'ch7al', 'bch7al', '3afak', '3fak', 'labas', 'mzyan', 'meziane',
+  'dyal', 'dyali', 'khoya', 'sahbi', 'chno', 'chnou', 'achno', 'nakhdha',
+  '3andek', '3andkom', 'daba', 'ghadi', 'ghir', 'walakin', 'tomobil',
+  'tonobil', 'smahli', 'inchallah', 'yallah', 'safi', 'zwina', 'zwin',
+  'flouss', 'atay', 'nkri', 'kanbghi', 'momkin', 'mumkin', 'salam',
+];
+const ENGLISH_MARKERS = [
+  'the', 'you', 'your', 'want', 'need', 'have', 'how', 'much', 'many',
+  'hello', 'price', 'available', 'book', 'booking', 'rent', 'can', 'what',
+  'when', 'where', 'thanks', 'please', 'would', 'like', 'there', 'this',
+];
+
+/**
+ * Détection heuristique de la langue d'un message client. Le résultat est
+ * injecté dans le prompt pour que le bot réponde dans la même langue ET
+ * change de langue dès que le client en change.
+ */
+function detectLanguage(text) {
+  const t = String(text || '');
+  if (/[؀-ۿ]/.test(t)) return 'darija marocaine ou arabe (écriture arabe)';
+  const words = t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  const hits = (markers) => words.filter((w) => markers.includes(w)).length;
+  if (hits(DARIJA_LATIN_MARKERS) >= 1) return 'darija marocaine (alphabet latin)';
+  if (hits(ENGLISH_MARKERS) >= 2) return 'anglais';
+  return 'français';
+}
+
 /**
  * Réservations actives (pending/confirmed, non terminées) de l'agent, avec
  * dates exploitables. Sert à la fois au prompt (l'IA voit ce qui est pris)
@@ -214,8 +275,8 @@ function findConflict(bookings, request, { excludeCustomerId = null } = {}) {
   return { until, nextAvailable: new Date(until.getTime() + 24 * 60 * 60 * 1000) };
 }
 
-/** Prompt système : identité de l'agent + analyse métier + contexte données + règles. */
-function buildSystemPrompt(agent, contextRows, bookings = []) {
+/** Prompt système : identité + analyse métier + contexte données + langue + règles. */
+function buildSystemPrompt(agent, contextRows, bookings = [], customerLanguage = null) {
   let analysis = null;
   try {
     analysis = agent.sheet_analysis ? JSON.parse(agent.sheet_analysis) : null;
@@ -240,8 +301,11 @@ function buildSystemPrompt(agent, contextRows, bookings = []) {
       : null,
     '',
     'LANGUES :',
-    "- Les clients écrivent en darija marocaine (alphabet arabe OU latin, ex. « wach kayna chi tomobil », « bghit nkri »), en arabe ou en français — comprends les trois.",
-    '- Réponds TOUJOURS dans la langue du dernier message du client (darija → darija, arabe → arabe, français → français).',
+    "- Les clients écrivent en darija marocaine (alphabet arabe OU latin, ex. « wach kayna chi tomobil », « bghit nkri »), en arabe, en français ou en anglais — comprends les quatre.",
+    customerLanguage
+      ? `- Langue détectée du DERNIER message du client : ${customerLanguage}. Réponds STRICTEMENT dans cette langue, sans mélanger.`
+      : '- Réponds TOUJOURS dans la langue du dernier message du client.',
+    "- Si le client change de langue en cours de conversation, change IMMÉDIATEMENT avec lui — suis toujours la langue de son dernier message, pas celle du début de la conversation.",
     "- Si le message est ambigu ou incompréhensible, pose UNE question de clarification polie au lieu de deviner.",
     '',
     'RÈGLES :',
@@ -258,7 +322,9 @@ function buildSystemPrompt(agent, contextRows, bookings = []) {
     '```',
     "- JAMAIS de bloc JSON pour une question, une demande de prix, une hésitation, une salutation ou une simple présentation de produits.",
     '- "reservation" = élément bloqué sur une période (location, rendez-vous, service) ; "order" = achat / commande de produit.',
-    '- Le champ "data" doit contenir "item" (nom EXACT dans le catalogue), "start_date" et "end_date" au format AAAA-MM-JJ (même valeur pour un seul jour ; pour une commande, la date de livraison).',
+    '- Le champ "data" doit contenir "item" (le NOM exact dans le catalogue, pas la référence), "start_date" et "end_date" au format AAAA-MM-JJ (même valeur pour un seul jour ; pour une commande, la date de livraison).',
+    "- NE confirme JAMAIS une réservation sans connaître start_date ET end_date : tant que les dates manquent, demande-les au client et n'ajoute AUCUN bloc JSON.",
+    '- N\'inclus JAMAIS de champs vides dans "data" : un champ inconnu est simplement omis.',
     "- Une même réservation ne s'enregistre qu'UNE SEULE fois : si elle est déjà confirmée plus haut dans l'historique, n'ajoute PLUS de bloc.",
     "- Si une colonne d'image existe pour l'élément réservé, renseigne \"image\" avec son URL.",
   ]
@@ -311,6 +377,9 @@ async function loadOrCreateConversation(db, agent, channel, customerId, customer
  */
 async function recordTransaction(db, agent, customerId, customerName, action) {
   const type = TRANSACTION_TYPES.includes(action.action) ? action.action : 'inquiry';
+  // l'IA renvoie parfois "start_date": "" malgré le prompt : on ne stocke
+  // jamais de champs vides
+  const data = cleanActionData(action.data);
 
   const recent = await db.transaction.findFirst({
     where: {
@@ -328,11 +397,11 @@ async function recordTransaction(db, agent, customerId, customerName, action) {
       existing = JSON.parse(recent.data || '{}');
     } catch { /* data corrompue : on repart des nouvelles données */ }
     const itemBefore = extractItem(existing);
-    const itemAfter = extractItem(action.data || {});
+    const itemAfter = extractItem(data);
     const sameItem =
       !itemBefore || !itemAfter || normalizeItem(itemBefore) === normalizeItem(itemAfter);
     if (sameItem) {
-      const merged = { ...existing, ...(action.data || {}) };
+      const merged = { ...existing, ...data };
       await db.transaction.update({
         where: { id: recent.id },
         data: { data: JSON.stringify(merged) },
@@ -348,7 +417,7 @@ async function recordTransaction(db, agent, customerId, customerName, action) {
       customer_id: customerId || null,
       customer_name: customerName || null,
       transaction_type: type,
-      data: JSON.stringify(action.data || {}),
+      data: JSON.stringify(data),
     },
   });
   return tx.id;
@@ -387,7 +456,8 @@ async function handleInboundMessage({ agentId, channel = 'whatsapp', customerId,
     getDataContext(agent, searchQuery),
     getActiveBookings(db, agent),
   ]);
-  const systemPrompt = buildSystemPrompt(agent, contextRows, bookings);
+  const customerLanguage = detectLanguage(text);
+  const systemPrompt = buildSystemPrompt(agent, contextRows, bookings, customerLanguage);
 
   const provider = aiRegistry.get(agent.ai_provider || 'groq');
   const keys = JSON.parse(agent.ai_tokens || '[]');
@@ -458,6 +528,8 @@ module.exports = {
   getActiveBookings,
   compactBookings,
   findConflict,
+  detectLanguage,
+  cleanActionData,
   HISTORY_LIMIT,
   FALLBACK_REPLY,
 };

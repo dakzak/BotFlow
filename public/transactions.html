@@ -91,7 +91,8 @@
                 </div>
                 <div class="mt-1.5" x-show="Object.keys(tx.data).length">
                   <template x-for="(v, k) in tx.data" :key="k">
-                    <span class="inline-block bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-1">
+                    <span class="inline-block bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-1"
+                      x-show="String(v == null ? '' : v).trim() !== ''">
                       <span class="text-slate-400" x-text="k + ' : '"></span><span x-text="v"></span>
                     </span>
                   </template>
