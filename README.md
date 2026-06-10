@@ -56,7 +56,15 @@ src/
   ai/                      # AIRegistry + fournisseurs (contrat AIProvider)
   services/                # chatEngine (cœur), sessionStore, ragService (Phase 2)
   db/database.js           # client Prisma singleton
-public/                    # frontend statique (Alpine.js + Tailwind CDN)
+public/                    # frontend statique multi-pages (Alpine.js + Tailwind CDN)
+  index.html               # landing publique
+  register.html login.html # authentification
+  dashboard.html           # Vue d'ensemble (canal, QR, stats, conversations)
+  transactions.html        # réservations / commandes + export CSV
+  donnees.html             # aperçu de la source de données
+  parametres.html          # identité, source, IA, clés, suppression
+  agent-nouveau.html       # wizard de création en 5 étapes
+  js/common.js             # socle partagé (auth, api(), agents, sidebar)
 tests/                     # unit / integration / contract
 ```
 
@@ -118,10 +126,18 @@ base jetable (`prisma db push` dans [tests/globalSetup.js](tests/globalSetup.js)
 2. [railway.com](https://railway.com) → **New Project → Deploy from GitHub repo** → choisir le repo.
 3. Dans le service → **Settings → Volumes → Add Volume**, mount path : `/data`
    (persistance de SQLite + sessions WhatsApp entre les déploiements).
-4. **Variables** : `JWT_SECRET`, `DATABASE_URL=file:/data/botflow.db`, `SESSIONS_DIR=/data/sessions`.
+4. **Variables** : `JWT_SECRET` (longue chaîne aléatoire — sinon un secret temporaire est
+   généré et les sessions sautent à chaque redéploiement). `DATABASE_URL` et `SESSIONS_DIR`
+   sont optionnelles : la commande de démarrage (railway.json) applique par défaut
+   `file:/data/botflow.db` et `/data/sessions`.
 5. **Settings → Networking → Generate Domain** pour obtenir l'URL publique.
 6. Chaque `git push` sur `main` redéploie automatiquement ; les migrations Prisma
    sont appliquées au démarrage (`npx prisma migrate deploy`, voir railway.json).
+
+Dépannage : `Error P1012 — Environment variable not found: DATABASE_URL` signifie que la
+variable manquait au lancement de `prisma migrate deploy` ; corrigé par les valeurs par
+défaut du startCommand. Sans volume monté sur `/data`, l'app fonctionne mais les données
+sont PERDUES à chaque redéploiement.
 
 ⚠️ WhatsApp/Baileys exige un **processus toujours actif** (connexion WebSocket persistante) :
 pas de serverless, pas d'hébergeur qui « endort » le service.

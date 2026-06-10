@@ -1,14 +1,26 @@
 const jwt = require('jsonwebtoken');
+const { randomBytes } = require('crypto');
+
+// Secret de secours généré au démarrage si JWT_SECRET est absent en production :
+// le service reste utilisable, mais les jetons seront invalidés à chaque
+// redéploiement. TOUJOURS définir JWT_SECRET dans les variables Railway.
+let generatedSecret = null;
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET est obligatoire en production');
+  if (secret) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    if (!generatedSecret) {
+      generatedSecret = randomBytes(32).toString('hex');
+      console.error(
+        '⚠️  JWT_SECRET non défini : secret temporaire généré pour ce démarrage. ' +
+        'Les sessions seront perdues au prochain redéploiement — ' +
+        'ajoutez JWT_SECRET dans les variables d\'environnement Railway.'
+      );
     }
-    return 'dev-secret-ne-pas-utiliser-en-production';
+    return generatedSecret;
   }
-  return secret;
+  return 'dev-secret-ne-pas-utiliser-en-production';
 }
 
 /**
