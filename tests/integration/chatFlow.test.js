@@ -79,6 +79,31 @@ describe('Moteur de conversation — bout en bout (IA mockée)', () => {
     expect(messages[1].role).toBe('assistant');
   });
 
+  test('anti-doublon : le bloc répété FUSIONNE au lieu de dupliquer', async () => {
+    const baseMock = groq._completeWithKey;
+    // le client reconfirme : le modèle ré-émet un bloc, avec un détail en plus
+    groq._completeWithKey = async () =>
+      'C\'est bien noté !\n```json\n{"action": "reservation", "data": {"vehicule": "Dacia Logan", "ville": "Casablanca"}}\n```';
+    try {
+      await chatEngine.handleInboundMessage({
+        agentId: agent.id,
+        customerId: '212600000001@s.whatsapp.net',
+        customerName: 'Ali',
+        text: 'Oui oui je confirme encore',
+      });
+    } finally {
+      groq._completeWithKey = baseMock;
+    }
+
+    const txs = await request(app)
+      .get(`/api/agents/${agent.id}/transactions`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(txs.body).toHaveLength(1); // toujours UNE seule transaction
+    expect(txs.body[0].data.vehicule).toBe('Dacia Logan'); // données d'origine conservées
+    expect(txs.body[0].data.jours).toBe(2);
+    expect(txs.body[0].data.ville).toBe('Casablanca'); // nouveau détail fusionné
+  });
+
   test('changement de statut + export CSV', async () => {
     const txs = await request(app)
       .get(`/api/agents/${agent.id}/transactions`)
@@ -99,6 +124,43 @@ describe('Moteur de conversation — bout en bout (IA mockée)', () => {
     expect(csv.text).toContain('vehicule');
     expect(csv.text).toContain('Dacia Logan');
     expect(csv.text).toContain('confirmed');
+  });
+
+  test('double réservation : refusée par le garde-fou serveur, avec date de dispo', async () => {
+    const baseMock = groq._completeWithKey;
+    try {
+      // le client Brahim réserve la Clio du 10 au 12 janvier 2030
+      groq._completeWithKey = async () =>
+        'Réservation confirmée !\n```json\n{"action": "reservation", "data": {"item": "Renault Clio", "start_date": "2030-01-10", "end_date": "2030-01-12"}}\n```';
+      await chatEngine.handleInboundMessage({
+        agentId: agent.id,
+        customerId: '212600000004@s.whatsapp.net',
+        customerName: 'Brahim',
+        text: 'Je confirme la Clio du 10 au 12 janvier 2030',
+      });
+
+      // la cliente Chaima veut la MÊME Clio sur des dates qui chevauchent :
+      // même si l'IA « confirme », le serveur refuse et propose la date libre
+      groq._completeWithKey = async () =>
+        'Parfait, réservation confirmée !\n```json\n{"action": "reservation", "data": {"item": "renault clio", "start_date": "2030-01-11", "end_date": "2030-01-13"}}\n```';
+      const reply = await chatEngine.handleInboundMessage({
+        agentId: agent.id,
+        customerId: '212600000005@s.whatsapp.net',
+        customerName: 'Chaima',
+        text: 'Je confirme la clio du 11 au 13',
+      });
+
+      expect(reply.text).toContain('déjà réservé');
+      expect(reply.text).toContain('2030-01-13'); // lendemain de la fin existante
+
+      const txs = await request(app)
+        .get(`/api/agents/${agent.id}/transactions`)
+        .set('Authorization', `Bearer ${token}`);
+      // la Logan d'Ali + la Clio de Brahim — RIEN n'a été créé pour Chaima
+      expect(txs.body).toHaveLength(2);
+    } finally {
+      groq._completeWithKey = baseMock;
+    }
   });
 
   test('quota IA dépassé : message de repli poli, jamais de silence', async () => {

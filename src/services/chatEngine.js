@@ -14,8 +14,13 @@ const dataSourceRegistry = require('../datasources/DataSourceRegistry');
 const HISTORY_LIMIT = 10; // messages d'historique envoyés à l'IA
 const HISTORY_MSG_MAX_CHARS = 300; // troncature de chaque message d'historique
 const CONTEXT_ROWS_LIMIT = 8; // lignes de catalogue injectées dans le prompt
+const BOOKINGS_LIMIT = 12; // réservations à venir injectées dans le prompt
 const REPLY_MAX_TOKENS = 400; // réponse courte, adaptée à WhatsApp
 const TRANSACTION_TYPES = ['reservation', 'order', 'inquiry'];
+// Anti-doublon : le modèle répète parfois le bloc JSON à chaque message.
+// Une transaction « pending » du même type, même client, plus récente que
+// cette fenêtre est MISE À JOUR (fusion des données) au lieu d'être dupliquée.
+const TX_DEDUP_WINDOW_MS = 10 * 60 * 1000;
 
 const FALLBACK_REPLY =
   'Désolé, je reçois beaucoup de messages en ce moment 🙏 Merci de réessayer dans une petite minute.';
@@ -102,35 +107,160 @@ function compactRows(rows, { maxRows = CONTEXT_ROWS_LIMIT, maxCell = 80, maxChar
   return out.length > maxChars ? out.slice(0, maxChars) : out;
 }
 
+/** Parse strict d'une date AAAA-MM-JJ (format imposé à l'IA) -> Date UTC ou null. */
+function parseISODate(value) {
+  if (typeof value !== 'string') return null;
+  const m = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  // rejette les dates impossibles (2026-02-31 « déborde » sur mars)
+  if (d.getUTCMonth() !== +m[2] - 1 || d.getUTCDate() !== +m[3]) return null;
+  return d;
+}
+
+const formatDate = (d) => d.toISOString().slice(0, 10);
+const todayUTC = () => parseISODate(formatDate(new Date()));
+
+// Le prompt impose "item" / "start_date" / "end_date", mais l'IA dévie parfois ;
+// on tolère les noms de champs les plus probables pour ne pas perdre la garde.
+const ITEM_KEYS = ['item', 'vehicule', 'véhicule', 'voiture', 'produit', 'service', 'article', 'nom', 'name'];
+const START_KEYS = ['start_date', 'date_debut', 'date_début', 'date'];
+const END_KEYS = ['end_date', 'date_fin', 'date'];
+
+/** Première valeur non vide parmi les clés candidates (insensible à la casse). */
+function pickField(data, keys) {
+  if (!data || typeof data !== 'object') return null;
+  const lower = {};
+  for (const [k, v] of Object.entries(data)) lower[k.toLowerCase()] = v;
+  const v = keys.map((k) => lower[k]).find((x) => typeof x === 'string' && x.trim());
+  return v ? v.trim() : null;
+}
+
+/** Nom de l'élément réservé / commandé dans un data de transaction, ou null. */
+function extractItem(data) {
+  return pickField(data, ITEM_KEYS);
+}
+
+/**
+ * Extrait { item, start, end } du champ data d'une transaction (réservation).
+ * Une date unique (« date ») vaut pour le début ET la fin (réservation d'un jour).
+ * Retourne null si l'élément ou les dates sont absents / invalides.
+ */
+function extractBooking(data) {
+  const item = extractItem(data);
+  const start = parseISODate(pickField(data, START_KEYS));
+  const end = parseISODate(pickField(data, END_KEYS)) || start;
+  if (!item || !start || !end || end < start) return null;
+  return { item, start, end };
+}
+
+const normalizeItem = (s) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * Réservations actives (pending/confirmed, non terminées) de l'agent, avec
+ * dates exploitables. Sert à la fois au prompt (l'IA voit ce qui est pris)
+ * et au garde-fou serveur anti double-réservation.
+ */
+async function getActiveBookings(db, agent) {
+  const rows = await db.transaction.findMany({
+    where: {
+      agent_id: agent.id,
+      transaction_type: 'reservation',
+      status: { in: ['pending', 'confirmed'] },
+    },
+    orderBy: { created_at: 'desc' },
+    take: 200,
+  });
+  const today = todayUTC();
+  const bookings = [];
+  for (const r of rows) {
+    let booking = null;
+    try {
+      booking = extractBooking(JSON.parse(r.data || '{}'));
+    } catch { /* data corrompue : ignorée */ }
+    if (booking && booking.end >= today) {
+      bookings.push({ ...booking, customerId: r.customer_id });
+    }
+  }
+  return bookings;
+}
+
+/** Sérialisation compacte des réservations pour le prompt (élément | du | au). */
+function compactBookings(bookings, limit = BOOKINGS_LIMIT) {
+  return bookings
+    .slice(0, limit)
+    .map((b) => `${b.item} | ${formatDate(b.start)} | ${formatDate(b.end)}`)
+    .join('\n');
+}
+
+/**
+ * Chevauchement entre la demande et les réservations existantes du même élément.
+ * Retourne null si la période est libre, sinon { until, nextAvailable } :
+ * l'élément redevient disponible le lendemain de la dernière fin en conflit.
+ * Les réservations du client demandeur sont ignorées : sa propre réservation
+ * répétée n'est pas un conflit (elle est fusionnée par l'anti-doublon).
+ */
+function findConflict(bookings, request, { excludeCustomerId = null } = {}) {
+  const wanted = normalizeItem(request.item);
+  let until = null;
+  for (const b of bookings) {
+    if (excludeCustomerId && b.customerId === excludeCustomerId) continue;
+    if (normalizeItem(b.item) !== wanted) continue;
+    if (b.start <= request.end && request.start <= b.end) {
+      if (!until || b.end > until) until = b.end;
+    }
+  }
+  if (!until) return null;
+  return { until, nextAvailable: new Date(until.getTime() + 24 * 60 * 60 * 1000) };
+}
+
 /** Prompt système : identité de l'agent + analyse métier + contexte données + règles. */
-function buildSystemPrompt(agent, contextRows) {
+function buildSystemPrompt(agent, contextRows, bookings = []) {
   let analysis = null;
   try {
     analysis = agent.sheet_analysis ? JSON.parse(agent.sheet_analysis) : null;
   } catch { /* analyse absente ou corrompue */ }
 
   const catalog = compactRows(contextRows);
+  const booked = compactBookings(bookings);
 
   return [
     `Tu es « ${agent.name} », l'assistant virtuel de cette entreprise sur sa messagerie.`,
     `Activité de l'entreprise : ${agent.description || 'non précisée'}.`,
     `Type de métier : ${agent.business_type || 'other'}.`,
+    `Date du jour : ${formatDate(new Date())}.`,
     analysis && analysis.mapping
       ? `Signification des colonnes du catalogue : ${JSON.stringify(analysis.mapping)}`
       : null,
     catalog
       ? `DONNÉES DU CATALOGUE (lignes au format « colonne | colonne » ; n'utilise QUE ces informations, n'invente rien) :\n${catalog}`
       : "Aucune donnée catalogue disponible pour cette question.",
+    booked
+      ? `RÉSERVATIONS DÉJÀ ENREGISTRÉES (élément | du | au) — ces éléments sont INDISPONIBLES sur ces périodes :\n${booked}`
+      : null,
+    '',
+    'LANGUES :',
+    "- Les clients écrivent en darija marocaine (alphabet arabe OU latin, ex. « wach kayna chi tomobil », « bghit nkri »), en arabe ou en français — comprends les trois.",
+    '- Réponds TOUJOURS dans la langue du dernier message du client (darija → darija, arabe → arabe, français → français).',
+    "- Si le message est ambigu ou incompréhensible, pose UNE question de clarification polie au lieu de deviner.",
     '',
     'RÈGLES :',
-    '- Réponds dans la langue du client, en 2 à 4 phrases maximum (conversation WhatsApp).',
+    '- Réponds en 2 à 4 phrases maximum (conversation WhatsApp).',
     '- Sois poli et commercial ; ne propose que des produits / services présents dans les données ci-dessus.',
-    "- Quand le client CONFIRME une réservation ou une commande, ajoute à la TOUTE FIN de ta réponse un bloc :",
+    "- Si l'information demandée n'est pas dans les données, dis-le honnêtement.",
+    "- Avant de confirmer une réservation (location, rendez-vous, service), demande TOUJOURS la date de début et la date de fin souhaitées. Pour une commande, demande la date de livraison ou de retrait.",
+    "- Vérifie les réservations déjà enregistrées ci-dessus : si l'élément demandé est pris sur des dates qui se chevauchent, ne confirme PAS ; indique au client la première date où il sera disponible (le lendemain de la fin de la réservation existante) et propose-la.",
+    '',
+    'ENREGISTREMENT DES TRANSACTIONS — règle STRICTE :',
+    "- Ajoute un bloc JSON à la TOUTE FIN de ta réponse UNIQUEMENT quand le client vient de CONFIRMER explicitement une réservation ou une commande (ex. « oui je confirme », « wakha nakhdha », « نأكد الحجز », « c'est bon je la prends »).",
     '```json',
-    '{"action": "reservation" | "order" | "inquiry", "data": { ... détails ... }, "image": "url optionnelle"}',
+    '{"action": "reservation" | "order", "data": { ... détails ... }, "image": "url optionnelle"}',
     '```',
-    "- N'ajoute ce bloc QUE si une action métier doit être enregistrée ; sinon, aucun bloc JSON.",
-    "- Si une colonne d'image existe pour l'élément discuté, renseigne \"image\" avec son URL.",
+    "- JAMAIS de bloc JSON pour une question, une demande de prix, une hésitation, une salutation ou une simple présentation de produits.",
+    '- "reservation" = élément bloqué sur une période (location, rendez-vous, service) ; "order" = achat / commande de produit.',
+    '- Le champ "data" doit contenir "item" (nom EXACT dans le catalogue), "start_date" et "end_date" au format AAAA-MM-JJ (même valeur pour un seul jour ; pour une commande, la date de livraison).',
+    "- Une même réservation ne s'enregistre qu'UNE SEULE fois : si elle est déjà confirmée plus haut dans l'historique, n'ajoute PLUS de bloc.",
+    "- Si une colonne d'image existe pour l'élément réservé, renseigne \"image\" avec son URL.",
   ]
     .filter((line) => line !== null)
     .join('\n');
@@ -171,9 +301,46 @@ async function loadOrCreateConversation(db, agent, channel, customerId, customer
   });
 }
 
-/** Enregistre l'action métier détectée comme transaction. */
+/**
+ * Enregistre l'action métier détectée comme transaction.
+ * Anti-doublon : si une transaction « pending » du même type pour le même
+ * client existe dans la fenêtre récente, on FUSIONNE les nouvelles données
+ * dedans au lieu de créer une nouvelle ligne (le modèle répète parfois le
+ * bloc à chaque message de la même conversation). Exception : un AUTRE
+ * élément (2e voiture, 2e produit) reste une transaction distincte.
+ */
 async function recordTransaction(db, agent, customerId, customerName, action) {
   const type = TRANSACTION_TYPES.includes(action.action) ? action.action : 'inquiry';
+
+  const recent = await db.transaction.findFirst({
+    where: {
+      agent_id: agent.id,
+      customer_id: customerId || null,
+      transaction_type: type,
+      status: 'pending',
+      created_at: { gte: new Date(Date.now() - TX_DEDUP_WINDOW_MS) },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+  if (recent) {
+    let existing = {};
+    try {
+      existing = JSON.parse(recent.data || '{}');
+    } catch { /* data corrompue : on repart des nouvelles données */ }
+    const itemBefore = extractItem(existing);
+    const itemAfter = extractItem(action.data || {});
+    const sameItem =
+      !itemBefore || !itemAfter || normalizeItem(itemBefore) === normalizeItem(itemAfter);
+    if (sameItem) {
+      const merged = { ...existing, ...(action.data || {}) };
+      await db.transaction.update({
+        where: { id: recent.id },
+        data: { data: JSON.stringify(merged) },
+      });
+      return recent.id;
+    }
+  }
+
   const tx = await db.transaction.create({
     data: {
       agent_id: agent.id,
@@ -207,8 +374,20 @@ async function handleInboundMessage({ agentId, channel = 'whatsapp', customerId,
       content: String(content || '').slice(0, HISTORY_MSG_MAX_CHARS),
     }));
 
-  const contextRows = await getDataContext(agent, text);
-  const systemPrompt = buildSystemPrompt(agent, contextRows);
+  // La recherche catalogue inclut les 2 derniers messages du client : un
+  // « wakha nakhdha » seul ne matche rien, mais avec « la Clio à Casablanca »
+  // du message précédent le contexte reste pertinent.
+  const lastUserMessages = fullHistory
+    .filter((m) => m.role === 'user')
+    .slice(-2)
+    .map((m) => m.content);
+  const searchQuery = [...lastUserMessages, text].join(' ');
+
+  const [contextRows, bookings] = await Promise.all([
+    getDataContext(agent, searchQuery),
+    getActiveBookings(db, agent),
+  ]);
+  const systemPrompt = buildSystemPrompt(agent, contextRows, bookings);
 
   const provider = aiRegistry.get(agent.ai_provider || 'groq');
   const keys = JSON.parse(agent.ai_tokens || '[]');
@@ -226,6 +405,23 @@ async function handleInboundMessage({ agentId, channel = 'whatsapp', customerId,
     // quota atteint / IA indisponible : on répond poliment plutôt que de se taire
     console.error(`[chat] agent=${agent.id} IA indisponible : ${err.message}`);
     replyText = FALLBACK_REPLY;
+  }
+
+  // Garde-fou serveur : même si l'IA confirme malgré le prompt, une réservation
+  // qui chevauche une réservation active du même élément n'est PAS enregistrée.
+  if (action && action.action === 'reservation') {
+    const requested = extractBooking(action.data);
+    const conflict = requested
+      ? findConflict(bookings, requested, { excludeCustomerId: customerId })
+      : null;
+    if (conflict) {
+      action = null;
+      mediaUrl = null;
+      replyText =
+        `Désolé, « ${requested.item} » est déjà réservé sur ces dates 🙏 ` +
+        `Il sera disponible à partir du ${formatDate(conflict.nextAvailable)}. ` +
+        'Souhaitez-vous réserver à partir de cette date ?';
+    }
   }
 
   if (action) {
@@ -257,6 +453,11 @@ module.exports = {
   compactRows,
   getDataContext,
   recordTransaction,
+  parseISODate,
+  extractBooking,
+  getActiveBookings,
+  compactBookings,
+  findConflict,
   HISTORY_LIMIT,
   FALLBACK_REPLY,
 };

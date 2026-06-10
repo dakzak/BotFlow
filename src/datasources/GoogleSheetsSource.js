@@ -149,21 +149,26 @@ class GoogleSheetsSource extends DataSource {
   }
 
   /**
-   * Contexte pour le moteur : filtre naïf par mots-clés, avec repli sur les
-   * premières lignes si rien ne matche (l'IA fait le tri final).
+   * Contexte pour le moteur : filtre naïf par mots-clés, insensible à la casse
+   * ET aux accents (« reservation » matche « Réservation », « velo » → « vélo »),
+   * avec repli sur les premières lignes si rien ne matche (l'IA fait le tri final).
    * Phase 2 : remplacé par une vraie recherche RAG pour les gros volumes.
    */
   async search(query, { limit = 8 } = {}) {
     const { records } = await this.fetchTable();
-    const terms = String(query || '')
-      .toLowerCase()
+    const fold = (s) =>
+      String(s)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '');
+    const terms = fold(query || '')
       .split(/\s+/)
       .filter((t) => t.length > 2);
     if (!terms.length) return records.slice(0, limit);
 
     const scored = records
       .map((r) => {
-        const haystack = Object.values(r).join(' ').toLowerCase();
+        const haystack = fold(Object.values(r).join(' '));
         return { r, score: terms.filter((t) => haystack.includes(t)).length };
       })
       .filter((x) => x.score > 0)

@@ -84,10 +84,18 @@
             <div class="border-t border-slate-100 py-3 flex items-start justify-between gap-4">
               <div class="min-w-0">
                 <div class="text-sm font-medium">
-                  <span x-text="tx.transaction_type"></span> —
+                  <span class="inline-block rounded px-1.5 py-0.5 text-xs mr-1"
+                    :class="tx.transaction_type === 'reservation' ? 'bg-emerald-100 text-emerald-700' : (tx.transaction_type === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600')"
+                    x-text="{reservation: 'Réservation', order: 'Commande', inquiry: 'Demande'}[tx.transaction_type] || tx.transaction_type"></span>
                   <span x-text="tx.customer_name || tx.customer_id"></span>
                 </div>
-                <div class="text-xs text-slate-500 mt-1 break-all" x-text="JSON.stringify(tx.data)"></div>
+                <div class="mt-1.5" x-show="Object.keys(tx.data).length">
+                  <template x-for="(v, k) in tx.data" :key="k">
+                    <span class="inline-block bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-1">
+                      <span class="text-slate-400" x-text="k + ' : '"></span><span x-text="v"></span>
+                    </span>
+                  </template>
+                </div>
                 <div class="text-xs text-slate-400 mt-1" x-text="formatDate(tx.created_at)"></div>
               </div>
               <select :value="tx.status" @change="setTxStatus(tx, $event.target.value)"
