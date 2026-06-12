@@ -33,9 +33,10 @@ class DataSourceRegistry {
 const registry = new DataSourceRegistry();
 
 const GoogleSheetsSource = require('./GoogleSheetsSource');
+const WebsiteSource = require('./WebsiteSource');
 registry.register('google_sheets', (config) => new GoogleSheetsSource(config));
+registry.register('website', (config) => new WebsiteSource(config));
 // Phase 2 : registry.register('excel', (config) => new ExcelSource(config));
 // Phase 2 : registry.register('pdf', (config) => new PdfSource(config));
-// Phase 2 : registry.register('website', (config) => new WebsiteSource(config));
 
 module.exports = registry;

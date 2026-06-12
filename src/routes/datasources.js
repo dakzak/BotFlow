@@ -11,19 +11,27 @@ async function getAgentScoped(db, orgId, agentId) {
   return db.agent.findFirst({ where: { id: agentId, org_id: orgId } });
 }
 
+/** Type de source déduit de la référence : URL Sheets -> google_sheets, sinon site web. */
+function detectSourceType(ref) {
+  const s = String(ref || '');
+  if (/docs\.google\.com\/spreadsheets/i.test(s)) return 'google_sheets';
+  return 'website';
+}
+
 /**
  * POST /api/agents/:id/datasource/analyze — étape 2 du wizard.
- * Body : { type?: 'google_sheets', ref: 'https://docs.google.com/spreadsheets/...' }
- * Lit les premières lignes, détecte le sens des colonnes et sauvegarde le mapping.
+ * Body : { type?: 'google_sheets' | 'website', ref: URL Sheets ou domaine du site }
+ * Le type est déduit de la référence si non précisé. Analyse la source
+ * (lecture de la feuille / crawl du site) et sauvegarde le mapping.
  */
 router.post('/:id/datasource/analyze', asyncHandler(async (req, res) => {
   const db = getDb();
   const agent = await getAgentScoped(db, req.auth.orgId, req.params.id);
   if (!agent) return res.status(404).json({ error: 'Agent introuvable' });
 
-  const type = (req.body && req.body.type) || agent.data_source_type || 'google_sheets';
   const ref = (req.body && req.body.ref) || agent.source_ref;
-  if (!ref) return res.status(400).json({ error: 'ref est requis (URL de la source)' });
+  if (!ref) return res.status(400).json({ error: 'ref est requis (URL de la source ou domaine du site)' });
+  const type = (req.body && req.body.type) || detectSourceType(ref);
 
   const source = dataSourceRegistry.create(type, { ref });
   const analysis = await source.analyze();

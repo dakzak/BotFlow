@@ -5,10 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BotFlow — Données</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          animation: { shimmer: 'shimmer 1.6s linear infinite' },
+          keyframes: { shimmer: { '0%': { backgroundPosition: '-400px 0' }, '100%': { backgroundPosition: '400px 0' } } },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/js/common.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .skeleton {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+      background-size: 800px 100%;
+    }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-900" x-data="donneesPage()" x-init="init()">
+<body class="bg-slate-100 text-slate-900 antialiased" x-data="donneesPage()" x-init="init()">
 
   <header class="bg-slate-950 text-white">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -30,7 +51,7 @@
         </div>
         <template x-for="agent in agents" :key="agent.id">
           <button @click="selectAgent(agent)"
-            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
+            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border transition-colors"
             :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
             <div class="font-medium" x-text="agent.name"></div>
             <div class="text-xs flex items-center gap-1.5 mt-0.5">
@@ -47,74 +68,382 @@
     <main class="col-span-12 md:col-span-9">
       <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
         <template x-for="t in tabs" :key="t.id">
-          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
+          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium transition-colors"
             :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
             x-text="t.label"></a>
         </template>
       </nav>
 
       <template x-if="error">
-        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+        <div class="bg-red-50 border border-red-300 text-red-700 rounded-xl px-4 py-3 mb-4 text-sm flex items-start gap-2">
+          <svg class="w-5 h-5 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.344 3.071c.866 1.5-.217 3.374-1.948 3.374H4.604c-1.73 0-2.813-1.874-1.948-3.374L10.05 4.7c.866-1.5 3.032-1.5 3.898 0l7.395 11.12Z M12 15.75h.007v.008H12v-.008Z" /></svg>
+          <span x-text="error"></span>
+        </div>
+      </template>
+      <template x-if="success">
+        <div class="bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl px-4 py-3 mb-4 text-sm flex items-center gap-2" x-transition>
+          <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+          <span x-text="success"></span>
+        </div>
       </template>
 
       <template x-if="!current">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
           <p class="text-sm">Aucun agent — <a href="/agent-nouveau.html" class="text-emerald-600 hover:underline">créez-en un</a> pour connecter une source de données.</p>
         </div>
       </template>
 
       <template x-if="current">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold">Source de données</h3>
-            <div class="flex gap-2">
-              <a x-show="current.source_ref" :href="current.source_ref" target="_blank" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 text-sm">Ouvrir la source</a>
-              <button @click="loadPreview()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 text-sm">Actualiser</button>
+        <div class="space-y-5">
+
+          <!-- ============ CARTE 1 : SOURCE DE DONNÉES (résumé ou wizard) ============ -->
+          <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold">Source de données</h3>
+                <span x-show="hasSource() && !editing" x-cloak
+                  class="text-[11px] font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5"
+                  :class="current.data_source_type === 'website' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'"
+                  x-text="current.data_source_type === 'website' ? 'Site web' : 'Google Sheets'"></span>
+              </div>
+              <button x-show="hasSource() && !editing" x-cloak @click="startEdit()"
+                class="text-sm border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5">Modifier la source</button>
             </div>
-          </div>
-          <template x-if="loading">
-            <p class="text-sm text-slate-500">Chargement de l'aperçu...</p>
-          </template>
-          <template x-if="!loading && !preview">
-            <p class="text-sm text-slate-500">
-              Aucune source configurée pour cet agent —
-              <a href="/parametres.html" class="text-emerald-600 hover:underline">ajoutez l'URL Google Sheets dans Paramètres</a>.
-            </p>
-          </template>
-          <template x-if="preview">
-            <div class="overflow-x-auto">
-              <p class="text-xs text-slate-500 mb-2" x-text="preview.total + ' lignes au total — aperçu des ' + preview.rows.length + ' premières'"></p>
+
+            <!-- ——— Résumé : source connectée ——— -->
+            <div x-show="hasSource() && !editing && !analyzing" x-cloak class="p-5">
+              <div class="flex flex-wrap items-center gap-4">
+                <span class="w-12 h-12 rounded-2xl grid place-items-center text-white shrink-0"
+                  :class="current.data_source_type === 'website' ? 'bg-gradient-to-br from-sky-400 to-indigo-500' : 'bg-gradient-to-br from-emerald-400 to-teal-500'">
+                  <svg x-show="current.data_source_type === 'website'" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3 7.5 7.03 7.5 12s2.015 9 4.5 9Zm-8.716-6h17.432M3.284 9h17.432" /></svg>
+                  <svg x-show="current.data_source_type !== 'website'" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v1.5m0-1.5c0-.621.504-1.125 1.125-1.125M12 10.875c0 .621-.504 1.125-1.125 1.125m1.125 0c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-1.125-1.125h-7.5m9.75 1.125v1.5m0-1.5c0-.621.504-1.125 1.125-1.125m7.5 0h-7.5" /></svg>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="font-semibold" x-text="sourceTitle()"></div>
+                  <a :href="sourceHref()" target="_blank" class="text-xs text-emerald-600 hover:underline truncate block max-w-md" x-text="current.source_ref"></a>
+                  <div class="flex flex-wrap gap-1.5 mt-2 text-[11px] font-medium text-slate-600">
+                    <template x-for="chip in summaryChips()" :key="chip">
+                      <span class="bg-slate-100 rounded-full px-2.5 py-1" x-text="chip"></span>
+                    </template>
+                  </div>
+                </div>
+                <button @click="reanalyze()"
+                  class="shrink-0 inline-flex items-center gap-1.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-lg px-4 py-2 shadow-sm">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                  Réanalyser
+                </button>
+              </div>
+            </div>
+
+            <!-- ——— Wizard ——— -->
+            <div x-show="editing || !hasSource() || analyzing" x-cloak class="p-5">
+
+              <!-- Étapes -->
+              <ol class="flex items-center mb-6">
+                <template x-for="(s, i) in ['Source', 'Analyse', 'Validation']" :key="s">
+                  <li class="flex items-center" :class="i < 2 ? 'flex-1' : ''">
+                    <span class="w-8 h-8 rounded-full grid place-items-center text-sm font-bold shrink-0 transition-colors"
+                      :class="wizardStep() > i + 1 ? 'bg-emerald-500 text-white' : (wizardStep() === i + 1 ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-400')">
+                      <template x-if="wizardStep() > i + 1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg></template>
+                      <template x-if="wizardStep() <= i + 1"><span x-text="i + 1"></span></template>
+                    </span>
+                    <span class="ml-2 text-sm font-medium hidden sm:inline"
+                      :class="wizardStep() === i + 1 ? 'text-slate-900' : 'text-slate-400'" x-text="s"></span>
+                    <span x-show="i < 2" class="flex-1 h-0.5 mx-3 rounded"
+                      :class="wizardStep() > i + 1 ? 'bg-emerald-400' : 'bg-slate-200'"></span>
+                  </li>
+                </template>
+              </ol>
+
+              <!-- Étape 1 : choisir la source -->
+              <div x-show="wizardStep() === 1" x-transition.opacity>
+                <div class="grid sm:grid-cols-2 gap-3 mb-4">
+                  <button @click="wizard.type = 'website'"
+                    class="relative text-left border-2 rounded-2xl p-4 transition-all"
+                    :class="wizard.type === 'website' ? 'border-sky-400 bg-sky-50/60 shadow-sm' : 'border-slate-200 hover:border-slate-300'">
+                    <div class="flex items-start gap-3">
+                      <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white grid place-items-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3 7.5 7.03 7.5 12s2.015 9 4.5 9Zm-8.716-6h17.432M3.284 9h17.432" /></svg>
+                      </span>
+                      <div>
+                        <div class="font-semibold">Site web</div>
+                        <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Donnez votre domaine : BotFlow explore le site et ses sous-domaines, trouve les produits, catégories et coordonnées.</p>
+                      </div>
+                    </div>
+                    <span x-show="wizard.type === 'website'" x-cloak class="absolute top-3 right-3 w-5 h-5 rounded-full bg-sky-500 text-white grid place-items-center">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    </span>
+                  </button>
+
+                  <button @click="wizard.type = 'google_sheets'"
+                    class="relative text-left border-2 rounded-2xl p-4 transition-all"
+                    :class="wizard.type === 'google_sheets' ? 'border-emerald-400 bg-emerald-50/60 shadow-sm' : 'border-slate-200 hover:border-slate-300'">
+                    <div class="flex items-start gap-3">
+                      <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white grid place-items-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6ZM3.75 9h16.5m-16.5 5.25h16.5M9 3.75v16.5m6-16.5v16.5" /></svg>
+                      </span>
+                      <div>
+                        <div class="font-semibold">Google Sheets</div>
+                        <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Feuille partagée en « toute personne disposant du lien » : votre catalogue reste modifiable en direct.</p>
+                      </div>
+                    </div>
+                    <span x-show="wizard.type === 'google_sheets'" x-cloak class="absolute top-3 right-3 w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    </span>
+                  </button>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Excel · PDF — bientôt disponibles.</p>
+
+                <label class="block text-sm font-medium text-slate-700 mb-1.5"
+                  x-text="wizard.type === 'website' ? 'Domaine ou adresse de votre site' : 'URL de la feuille Google Sheets'"></label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <div class="relative flex-1">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
+                    </span>
+                    <input x-model="wizard.ref" @keydown.enter="runAnalyze()"
+                      class="w-full border border-slate-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none rounded-xl pl-10 pr-3 py-2.5 text-sm"
+                      :placeholder="wizard.type === 'website' ? 'monsite.ma' : 'https://docs.google.com/spreadsheets/d/...'" />
+                  </div>
+                  <button @click="runAnalyze()" :disabled="!wizard.ref.trim()"
+                    class="inline-flex items-center justify-center gap-2 font-semibold text-white rounded-xl px-6 py-2.5 shadow-sm transition-all bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                    Analyser
+                  </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-2" x-show="wizard.type === 'website'">
+                  L'exploration prend 10 à 30 secondes : sitemap, pages produits, sous-domaines (shop.monsite.ma…), boutiques Shopify / WooCommerce détectées automatiquement.
+                </p>
+                <div class="mt-4" x-show="hasSource()">
+                  <button @click="cancelEdit()" class="text-sm text-slate-500 hover:text-slate-700">← Annuler, garder la source actuelle</button>
+                </div>
+              </div>
+
+              <!-- Étape « analyse en cours » -->
+              <div x-show="analyzing" x-cloak class="py-10 text-center" x-transition.opacity>
+                <div class="relative mx-auto w-20 h-20">
+                  <div class="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
+                  <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+                  <div class="absolute inset-0 grid place-items-center text-3xl" x-text="wizard.type === 'website' ? '🌍' : '📊'"></div>
+                </div>
+                <p class="font-semibold mt-5" x-text="wizard.type === 'website' ? 'Exploration de votre site…' : 'Lecture de votre feuille…'"></p>
+                <p class="text-sm text-slate-500 mt-1 h-5 transition-all" x-text="crawlMsg"></p>
+              </div>
+
+              <!-- Étape 2 : rapport d'analyse + validation -->
+              <template x-if="analysis && !analyzing">
+              <div x-transition.opacity>
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                  <span class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 grid place-items-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                  </span>
+                  <div>
+                    <span class="font-bold" x-text="analysis.source === 'website' ? ('Site analysé : ' + (analysis.siteName || wizard.ref)) : 'Feuille analysée'"></span>
+                    <span x-show="analysis.stats && analysis.stats.platform" x-cloak
+                      class="ml-2 text-[11px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 rounded-full px-2.5 py-0.5"
+                      x-text="'Boutique ' + (analysis.stats ? analysis.stats.platform : '')"></span>
+                  </div>
+                </div>
+
+                <!-- Tuiles de stats -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                  <template x-for="tile in statTiles()" :key="tile.label">
+                    <div class="rounded-2xl border border-slate-100 bg-gradient-to-br p-4" :class="tile.bg">
+                      <div class="text-2xl font-extrabold tracking-tight" x-text="tile.value"></div>
+                      <div class="text-xs font-medium text-slate-500 mt-0.5" x-text="tile.label"></div>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- Catégories découvertes -->
+                <div x-show="analysis.stats && analysis.stats.categories && analysis.stats.categories.length" x-cloak class="mb-5">
+                  <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Catégories découvertes</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="c in (analysis.stats ? analysis.stats.categories : [])" :key="c">
+                      <span class="text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200 rounded-full px-3 py-1" x-text="c"></span>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Coordonnées trouvées -->
+                <div x-show="contactLine()" x-cloak class="mb-5 flex items-center gap-2 text-sm text-slate-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+                  <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
+                  <span x-text="contactLine()"></span>
+                </div>
+
+                <!-- Mapping des colonnes (éditable pour Sheets, automatique pour site web) -->
+                <div class="mb-5">
+                  <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Signification des colonnes</div>
+                  <div x-show="analysis.source === 'website'" class="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
+                    Mapping automatique : nom, prix, catégorie, description et image sont déjà reconnus pour l'IA.
+                  </div>
+                  <div x-show="analysis.source !== 'website'" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <template x-for="h in analysis.headers" :key="h">
+                      <div class="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2">
+                        <span class="text-sm font-medium truncate flex-1" x-text="h" :title="h"></span>
+                        <select x-model="mapping[h]" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-600">
+                          <template x-for="m in meanings" :key="m.id">
+                            <option :value="m.id" x-text="m.label" :selected="mapping[h] === m.id"></option>
+                          </template>
+                        </select>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Échantillon -->
+                <div class="mb-6">
+                  <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+                    Échantillon <span class="normal-case" x-text="'(' + analysis.rowCount + ' lignes au total)'"></span>
+                  </div>
+                  <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-sm">
+                      <thead class="bg-slate-50">
+                        <tr class="text-left">
+                          <template x-for="h in analysis.headers" :key="h">
+                            <th class="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-slate-500" x-text="h"></th>
+                          </template>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <template x-for="(row, i) in analysis.sample" :key="i">
+                          <tr class="border-t border-slate-100" :class="i % 2 ? 'bg-slate-50/50' : ''">
+                            <template x-for="h in analysis.headers" :key="h">
+                              <td class="py-2 px-3 text-slate-600 align-middle">
+                                <template x-if="cellKind(h, row[h], analysis) === 'image'">
+                                  <img :src="row[h]" loading="lazy" class="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200" @error="$el.style.display = 'none'" />
+                                </template>
+                                <template x-if="cellKind(h, row[h], analysis) === 'link'">
+                                  <a :href="row[h]" target="_blank" class="text-emerald-600 hover:underline text-xs">Ouvrir ↗</a>
+                                </template>
+                                <template x-if="cellKind(h, row[h], analysis) === 'badge'">
+                                  <span class="text-[11px] font-semibold rounded-full px-2 py-0.5" :class="typeBadgeClass(row[h])" x-text="row[h]"></span>
+                                </template>
+                                <template x-if="cellKind(h, row[h], analysis) === 'text'">
+                                  <span class="block truncate max-w-[16rem]" :title="row[h]" x-text="row[h]"></span>
+                                </template>
+                              </td>
+                            </template>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                  <button @click="confirmMapping()" :disabled="saving"
+                    class="inline-flex items-center gap-2 font-semibold text-white rounded-xl px-6 py-2.5 shadow-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    <span x-text="saving ? 'Activation…' : 'Valider et activer'"></span>
+                  </button>
+                  <button @click="analysis = null" class="text-sm text-slate-500 hover:text-slate-700">← Modifier la source</button>
+                </div>
+              </div>
+              </template>
+            </div>
+          </section>
+
+          <!-- ============ CARTE 2 : APERÇU DU CATALOGUE ============ -->
+          <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 class="font-bold">Aperçu du catalogue</h3>
+                <p class="text-xs text-slate-400 mt-0.5" x-show="preview" x-text="preview ? (preview.total + ' lignes — ce que votre agent connaît') : ''"></p>
+              </div>
+              <button @click="loadPreview()" x-show="hasSource()"
+                class="text-sm border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                Actualiser
+              </button>
+            </div>
+
+            <!-- Squelette de chargement -->
+            <div x-show="previewLoading" x-cloak class="p-5 space-y-3">
+              <template x-for="i in 5" :key="i">
+                <div class="skeleton animate-shimmer h-10 rounded-xl"></div>
+              </template>
+            </div>
+
+            <div x-show="!previewLoading && !preview" x-cloak class="p-10 text-center text-slate-400 text-sm">
+              <template x-if="!hasSource()"><span>Connectez une source ci-dessus : l'aperçu de votre catalogue apparaîtra ici.</span></template>
+              <template x-if="hasSource()"><span>Aperçu indisponible — cliquez sur « Actualiser ».</span></template>
+            </div>
+
+            <div x-show="preview && !previewLoading" x-cloak class="overflow-x-auto">
               <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-left border-b border-slate-200">
-                    <template x-for="h in preview.headers" :key="h">
-                      <th class="py-2 pr-4 font-semibold" x-text="h"></th>
+                <thead class="bg-slate-50 sticky top-0">
+                  <tr class="text-left">
+                    <template x-for="h in (preview ? preview.headers : [])" :key="h">
+                      <th class="py-2.5 px-4 font-semibold text-xs uppercase tracking-wide text-slate-500" x-text="h"></th>
                     </template>
                   </tr>
                 </thead>
                 <tbody>
-                  <template x-for="(row, i) in preview.rows" :key="i">
-                    <tr class="border-b border-slate-100">
+                  <template x-for="(row, i) in (preview ? preview.rows : [])" :key="i">
+                    <tr class="border-t border-slate-100 hover:bg-emerald-50/40 transition-colors">
                       <template x-for="h in preview.headers" :key="h">
-                        <td class="py-1.5 pr-4 text-slate-600" x-text="row[h]"></td>
+                        <td class="py-2.5 px-4 text-slate-600 align-middle">
+                          <template x-if="cellKind(h, row[h], previewAnalysis()) === 'image'">
+                            <img :src="row[h]" loading="lazy" class="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200" @error="$el.style.display = 'none'" />
+                          </template>
+                          <template x-if="cellKind(h, row[h], previewAnalysis()) === 'link'">
+                            <a :href="row[h]" target="_blank" class="text-emerald-600 hover:underline text-xs">Ouvrir ↗</a>
+                          </template>
+                          <template x-if="cellKind(h, row[h], previewAnalysis()) === 'badge'">
+                            <span class="text-[11px] font-semibold rounded-full px-2 py-0.5" :class="typeBadgeClass(row[h])" x-text="row[h]"></span>
+                          </template>
+                          <template x-if="cellKind(h, row[h], previewAnalysis()) === 'text'">
+                            <span class="block truncate max-w-[18rem]" :title="row[h]" x-text="row[h]"></span>
+                          </template>
+                        </td>
                       </template>
                     </tr>
                   </template>
                 </tbody>
               </table>
             </div>
-          </template>
+          </section>
         </div>
       </template>
     </main>
   </div>
 
   <script>
+    const CRAWL_MESSAGES = [
+      'Lecture du sitemap.xml…',
+      'Découverte des pages et des sous-domaines…',
+      'Détection de la plateforme (Shopify, WooCommerce)…',
+      'Extraction des produits et des prix…',
+      'Repérage des catégories…',
+      'Collecte des coordonnées de contact…',
+      'Assemblage du catalogue pour votre agent…',
+    ];
+
     function donneesPage() {
       return {
         ...baseApp('donnees'),
         preview: null,
-        loading: false,
+        previewLoading: false,
+        editing: false,
+        analyzing: false,
+        saving: false,
+        success: '',
+        crawlMsg: '',
+        crawlTimer: null,
+        analysis: null,
+        mapping: {},
+        wizard: { type: 'website', ref: '' },
+        meanings: [
+          { id: 'name', label: 'Nom' },
+          { id: 'price', label: 'Prix' },
+          { id: 'category', label: 'Catégorie' },
+          { id: 'city', label: 'Ville' },
+          { id: 'availability', label: 'Disponibilité' },
+          { id: 'image_url', label: 'Image (URL)' },
+          { id: 'description', label: 'Description' },
+          { id: 'other', label: 'Autre' },
+        ],
 
         async init() {
           if (await this.initBase()) this.onAgentChange();
@@ -122,16 +451,185 @@
 
         onAgentChange() {
           this.preview = null;
+          this.analysis = null;
+          this.editing = false;
+          this.success = '';
+          if (this.current) {
+            this.wizard.type = this.current.data_source_type || 'website';
+            this.wizard.ref = this.current.source_ref || '';
+          }
           this.loadPreview();
         },
 
+        hasSource() {
+          return !!(this.current && this.current.data_source_type && this.current.source_ref);
+        },
+
+        wizardStep() {
+          if (this.analyzing) return 2;
+          return this.analysis ? 2 : 1;
+        },
+
+        sourceTitle() {
+          const a = this.current && this.current.sheet_analysis;
+          if (this.current.data_source_type === 'website') return (a && a.siteName) || this.current.source_ref;
+          return 'Feuille Google Sheets';
+        },
+
+        sourceHref() {
+          const ref = (this.current && this.current.source_ref) || '';
+          return /^https?:\/\//i.test(ref) ? ref : 'https://' + ref;
+        },
+
+        /** Petits badges du résumé : « 12 produits · 4 catégories · analysé le … ». */
+        summaryChips() {
+          const a = this.current && this.current.sheet_analysis;
+          if (!a) return [];
+          const chips = [];
+          if (a.stats) {
+            if (a.stats.platform) chips.push('Boutique ' + a.stats.platform);
+            chips.push(a.stats.productsFound + ' produits');
+            chips.push((a.stats.categories || []).length + ' catégories');
+            chips.push(a.stats.pagesCrawled + ' pages explorées');
+            if (a.stats.crawledAt) chips.push('analysé le ' + this.formatDate(a.stats.crawledAt));
+          } else {
+            if (a.rowCount !== undefined) chips.push(a.rowCount + ' lignes');
+            if (a.headers) chips.push(a.headers.length + ' colonnes');
+            if (a.confirmedAt) chips.push('validé le ' + this.formatDate(a.confirmedAt));
+          }
+          return chips;
+        },
+
+        statTiles() {
+          if (!this.analysis) return [];
+          const s = this.analysis.stats;
+          if (this.analysis.source === 'website' && s) {
+            return [
+              { label: 'Pages explorées', value: s.pagesCrawled, bg: 'from-sky-50 to-white' },
+              { label: 'Produits trouvés', value: s.productsFound, bg: 'from-emerald-50 to-white' },
+              { label: 'Catégories', value: (s.categories || []).length, bg: 'from-indigo-50 to-white' },
+              { label: 'Durée d\'analyse', value: Math.max(1, Math.round((s.durationMs || 0) / 1000)) + ' s', bg: 'from-amber-50 to-white' },
+            ];
+          }
+          return [
+            { label: 'Lignes', value: this.analysis.rowCount, bg: 'from-emerald-50 to-white' },
+            { label: 'Colonnes', value: (this.analysis.headers || []).length, bg: 'from-sky-50 to-white' },
+          ];
+        },
+
+        contactLine() {
+          const s = this.analysis && this.analysis.stats;
+          if (!s) return '';
+          const parts = [];
+          if (s.phones && s.phones.length) parts.push('Tél : ' + s.phones.join(', '));
+          if (s.emails && s.emails.length) parts.push('Email : ' + s.emails.join(', '));
+          return parts.join(' · ');
+        },
+
+        /** Comment rendre une cellule : vignette image, lien, badge type ou texte. */
+        cellKind(header, value, analysis) {
+          if (value === undefined || value === null || value === '') return 'none';
+          const meaning = analysis && analysis.mapping ? analysis.mapping[header] : null;
+          if ((meaning === 'image_url' || header === 'image') && /^https?:\/\//i.test(value)) return 'image';
+          if (header === 'url' && /^https?:\/\//i.test(value)) return 'link';
+          if (header === 'type' && ['produit', 'categorie', 'contact', 'page'].includes(value)) return 'badge';
+          return 'text';
+        },
+
+        typeBadgeClass(type) {
+          return {
+            produit: 'bg-emerald-100 text-emerald-700',
+            categorie: 'bg-sky-100 text-sky-700',
+            contact: 'bg-amber-100 text-amber-700',
+            page: 'bg-slate-100 text-slate-600',
+          }[type] || 'bg-slate-100 text-slate-600';
+        },
+
+        previewAnalysis() {
+          return this.current ? this.current.sheet_analysis : null;
+        },
+
+        startEdit() {
+          this.editing = true;
+          this.analysis = null;
+          this.success = '';
+          this.wizard.type = this.current.data_source_type || 'website';
+          this.wizard.ref = this.current.source_ref || '';
+        },
+
+        cancelEdit() {
+          this.editing = false;
+          this.analysis = null;
+        },
+
+        reanalyze() {
+          this.startEdit();
+          this.runAnalyze();
+        },
+
+        startCrawlMessages() {
+          let i = 0;
+          this.crawlMsg = this.wizard.type === 'website' ? CRAWL_MESSAGES[0] : 'Lecture des premières lignes…';
+          this.crawlTimer = setInterval(() => {
+            i = (i + 1) % CRAWL_MESSAGES.length;
+            if (this.wizard.type === 'website') this.crawlMsg = CRAWL_MESSAGES[i];
+          }, 2200);
+        },
+
+        async runAnalyze() {
+          if (!this.wizard.ref.trim() || this.analyzing) return;
+          this.error = '';
+          this.success = '';
+          this.analysis = null;
+          this.analyzing = true;
+          this.startCrawlMessages();
+          try {
+            this.analysis = await this.api('/agents/' + this.current.id + '/datasource/analyze', {
+              method: 'POST',
+              body: { type: this.wizard.type, ref: this.wizard.ref.trim() },
+            });
+            this.mapping = { ...(this.analysis.mapping || {}) };
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            clearInterval(this.crawlTimer);
+            this.analyzing = false;
+          }
+        },
+
+        async confirmMapping() {
+          this.saving = true;
+          this.error = '';
+          try {
+            await this.api('/agents/' + this.current.id + '/datasource/mapping', {
+              method: 'POST',
+              body: { mapping: this.mapping },
+            });
+            await this.loadAgents();
+            this.current = this.agents.find((a) => a.id === this.current.id) || this.current;
+            this.editing = false;
+            this.analysis = null;
+            this.success = 'Source activée ✅ Votre agent connaît maintenant ce catalogue.';
+            setTimeout(() => { this.success = ''; }, 6000);
+            this.loadPreview();
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            this.saving = false;
+          }
+        },
+
         async loadPreview() {
-          if (!this.current || !this.current.source_ref) { this.preview = null; return; }
-          this.loading = true;
+          if (!this.hasSource()) { this.preview = null; return; }
+          this.previewLoading = true;
           this.preview = null;
-          try { this.preview = await this.api('/agents/' + this.current.id + '/datasource/preview?limit=20'); }
-          catch (err) { this.error = err.message; }
-          finally { this.loading = false; }
+          try {
+            this.preview = await this.api('/agents/' + this.current.id + '/datasource/preview?limit=20');
+          } catch (err) {
+            this.error = err.message;
+          } finally {
+            this.previewLoading = false;
+          }
         },
       };
     }
