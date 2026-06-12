@@ -112,4 +112,31 @@ describe('Agents — CRUD et isolation multi-organisation', () => {
       .send({ org_id: 'autre-org' });
     expect(resp.status).toBe(400); // aucun champ autorisé fourni
   });
+
+  test('changer la source de données réinitialise l\'analyse des colonnes', async () => {
+    const token = await createOrg('Org Source');
+    const agent = (
+      await request(app)
+        .post('/api/agents')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Bot' })
+    ).body;
+
+    // une analyse existe (mapping confirmé sur l'ANCIENNE source)
+    await request(app)
+      .post(`/api/agents/${agent.id}/datasource/mapping`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mapping: { Nom: 'name', Prix: 'price' } });
+
+    // changer d'agence = nouvelle feuille : l'ancien mapping ne doit PAS
+    // être appliqué au nouveau catalogue
+    const patched = await request(app)
+      .patch(`/api/agents/${agent.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ source_ref: 'https://docs.google.com/spreadsheets/d/NouvelleAgence123/edit' });
+
+    expect(patched.status).toBe(200);
+    expect(patched.body.sheet_analysis).toBeNull();
+    expect(patched.body.sheet_columns).toBeNull();
+  });
 });

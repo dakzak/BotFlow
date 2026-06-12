@@ -68,7 +68,7 @@ describe('GoogleSheetsSource — URL et analyse', () => {
     expect(analysis.mapping).toEqual({ Nom: 'name', Prix: 'price', Ville: 'city' });
   });
 
-  test('search() : filtre par mots-clés avec repli sur les premières lignes', async () => {
+  test('search() : petit catalogue -> renvoyé en ENTIER, quelle que soit la question', async () => {
     const src = new GoogleSheetsSource({ ref: URL_OK });
     src.fetchTable = async () => ({
       headers: ['Nom', 'Ville'],
@@ -78,12 +78,32 @@ describe('GoogleSheetsSource — URL et analyse', () => {
         { Nom: 'Hyundai i10', Ville: 'Casablanca' },
       ],
     });
-    const hits = await src.search('voiture à agadir');
+    // « quelles voitures avez-vous ? » ne matche aucune ligne : le bot doit
+    // quand même voir TOUT le catalogue pour répondre correctement
+    const all = await src.search('quelles voitures avez-vous ?');
+    expect(all).toHaveLength(3);
+  });
+
+  test('search() : gros catalogue -> filtre par mots-clés (insensible aux accents), repli sinon', async () => {
+    const src = new GoogleSheetsSource({ ref: URL_OK });
+    src.fetchTable = async () => ({
+      headers: ['Nom', 'Ville'],
+      records: [
+        { Nom: 'Dacia Logan', Ville: 'Casablanca' },
+        { Nom: 'Renault Clio', Ville: 'Agadir' },
+        { Nom: 'Hyundai i10', Ville: 'Casablanca' },
+      ],
+    });
+    const hits = await src.search('voiture à agadir', { limit: 2 });
     expect(hits[0].Nom).toBe('Renault Clio');
 
+    // accents ignorés : « casà » matche « Casablanca »
+    const folded = await src.search('disponible à càsablanca', { limit: 2 });
+    expect(folded[0].Ville).toBe('Casablanca');
+
     // aucun terme ne matche -> repli : on renvoie quand même du contexte
-    const fallback = await src.search('xyzxyz');
-    expect(fallback.length).toBe(3);
+    const fallback = await src.search('xyzxyz', { limit: 2 });
+    expect(fallback).toHaveLength(2);
   });
 
   test('write() : refusée en MVP (feuille publique en lecture seule)', async () => {

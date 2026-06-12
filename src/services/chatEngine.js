@@ -13,7 +13,7 @@ const dataSourceRegistry = require('../datasources/DataSourceRegistry');
 // calibrée pour rester sous ces quotas tout en gardant des réponses utiles.
 const HISTORY_LIMIT = 10; // messages d'historique envoyés à l'IA
 const HISTORY_MSG_MAX_CHARS = 300; // troncature de chaque message d'historique
-const CONTEXT_ROWS_LIMIT = 8; // lignes de catalogue injectées dans le prompt
+const CONTEXT_ROWS_LIMIT = 12; // lignes de catalogue injectées dans le prompt
 const BOOKINGS_LIMIT = 12; // réservations à venir injectées dans le prompt
 const REPLY_MAX_TOKENS = 400; // réponse courte, adaptée à WhatsApp
 const TRANSACTION_TYPES = ['reservation', 'order', 'inquiry'];
@@ -306,6 +306,7 @@ function buildSystemPrompt(agent, contextRows, bookings = [], customerLanguage =
       ? `- Langue détectée du DERNIER message du client : ${customerLanguage}. Réponds STRICTEMENT dans cette langue, sans mélanger.`
       : '- Réponds TOUJOURS dans la langue du dernier message du client.',
     "- Si le client change de langue en cours de conversation, change IMMÉDIATEMENT avec lui — suis toujours la langue de son dernier message, pas celle du début de la conversation.",
+    "- Comprends les fautes de frappe, les abréviations et les mots locaux (« tomobil », « طوموبيل » = voiture ; « nkri », « كراء » = louer ; « chhal », « بشحال » = combien).",
     "- Si le message est ambigu ou incompréhensible, pose UNE question de clarification polie au lieu de deviner.",
     '',
     'RÈGLES :',

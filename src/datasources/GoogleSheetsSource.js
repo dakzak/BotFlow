@@ -154,8 +154,12 @@ class GoogleSheetsSource extends DataSource {
    * avec repli sur les premières lignes si rien ne matche (l'IA fait le tri final).
    * Phase 2 : remplacé par une vraie recherche RAG pour les gros volumes.
    */
-  async search(query, { limit = 8 } = {}) {
+  async search(query, { limit = 12 } = {}) {
     const { records } = await this.fetchTable();
+    // petit catalogue : tout envoyer, le bot voit l'offre COMPLÈTE quelle que
+    // soit la formulation de la question (essentiel pour « quelles voitures
+    // avez-vous ? » qui ne matche aucun mot-clé des lignes)
+    if (records.length <= limit) return records;
     const fold = (s) =>
       String(s)
         .toLowerCase()

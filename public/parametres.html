@@ -74,8 +74,11 @@
             <input x-model="settings.name" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" />
             <label class="block text-sm text-slate-600 mb-1">Description de l'activité (l'IA s'en sert pour comprendre le métier)</label>
             <textarea x-model="settings.description" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3"></textarea>
-            <label class="block text-sm text-slate-600 mb-1">URL Google Sheets (partage « toute personne disposant du lien »)</label>
-            <input x-model="settings.source_ref" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" placeholder="https://docs.google.com/spreadsheets/d/..." />
+            <label class="block text-sm text-slate-600 mb-1">
+              Source de données — URL Google Sheets ou domaine de votre site web
+              <span class="text-slate-400">(analyse détaillée et aperçu dans l'onglet <a href="/donnees.html" class="text-emerald-600 hover:underline">Données</a>)</span>
+            </label>
+            <input x-model="settings.source_ref" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" placeholder="https://docs.google.com/spreadsheets/d/...  ou  monsite.ma" />
             <label class="block text-sm text-slate-600 mb-1">Statut de l'agent</label>
             <select x-model="settings.status" class="border border-slate-300 rounded-lg px-3 py-2">
               <option value="active">Actif</option>
@@ -167,10 +170,22 @@
             };
             const keys = this.settings.keys.map((k) => k.trim()).filter(Boolean);
             if (keys.length) body.ai_tokens = keys;
+            const sourceChanged = body.source_ref !== (this.current.source_ref || '');
             this.current = await this.api('/agents/' + this.current.id, { method: 'PATCH', body });
+
+            // nouvelle source -> relancer l'analyse des colonnes immédiatement,
+            // sinon le bot répond sans comprendre le nouveau catalogue
+            if (sourceChanged && body.source_ref) {
+              this.success = 'Analyse de la nouvelle source...';
+              await this.api('/agents/' + this.current.id + '/datasource/analyze', {
+                method: 'POST', body: { ref: body.source_ref },
+              });
+              this.current = await this.api('/agents/' + this.current.id);
+            }
+
             await this.loadAgents();
             this.settings.keys = [];
-            this.success = 'Paramètres enregistrés ✅';
+            this.success = sourceChanged ? 'Paramètres enregistrés et nouvelle source analysée ✅' : 'Paramètres enregistrés ✅';
           } catch (err) { this.error = err.message; }
         },
 

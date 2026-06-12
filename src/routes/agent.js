@@ -84,6 +84,14 @@ router.patch('/:id', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
   }
 
+  // Changer de source de données invalide l'analyse des colonnes : sans ça,
+  // le bot continuerait à interpréter le NOUVEAU catalogue avec le mapping
+  // de l'ANCIEN (réponses fausses). Le frontend relance l'analyse après coup.
+  if (data.source_ref !== undefined && data.source_ref !== agent.source_ref) {
+    data.sheet_columns = null;
+    data.sheet_analysis = null;
+  }
+
   const updated = await db.agent.update({ where: { id: agent.id }, data });
   res.json(publicAgent(updated));
 }));

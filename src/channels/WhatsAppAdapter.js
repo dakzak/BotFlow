@@ -130,6 +130,13 @@ class WhatsAppAdapter extends ChannelAdapter {
         conn.attempts = 0;
         this._setStatus(agentId, 'connected');
         console.log(`[whatsapp] agent=${agentId} connecté ✅`);
+        // numéro réellement connecté (ex. '212612345678:12@s.whatsapp.net')
+        const selfNumber = String(sock.user?.id || '').split(':')[0].split('@')[0];
+        if (selfNumber) {
+          this._enforceSingleAgentPerNumber(agentId, selfNumber).catch((err) =>
+            console.warn(`[whatsapp] vérification numéro unique échouée: ${err.message}`)
+          );
+        }
       }
 
       if (connection === 'close') {
@@ -183,6 +190,40 @@ class WhatsAppAdapter extends ChannelAdapter {
         }
       }
     });
+  }
+
+  /**
+   * Un même numéro WhatsApp ne peut servir qu'UN SEUL agent. Si l'utilisateur
+   * re-scanne le même téléphone depuis un nouvel agent, l'ancienne liaison
+   * reste pourtant valide côté WhatsApp (multi-appareils) : les DEUX agents
+   * recevraient chaque message client et répondraient chacun avec son propre
+   * catalogue. On déconnecte donc tout autre agent utilisant ce numéro et on
+   * oublie sa session.
+   */
+  async _enforceSingleAgentPerNumber(agentId, number) {
+    const { getDb } = require('../db/database');
+    const db = getDb();
+    await db.agent.update({
+      where: { id: agentId },
+      data: { whatsapp_number: number },
+    }).catch(() => { /* agent supprimé entre-temps */ });
+
+    const duplicates = await db.agent.findMany({
+      where: { id: { not: agentId }, whatsapp_number: number },
+      select: { id: true },
+    });
+    for (const { id } of duplicates) {
+      console.warn(
+        `[whatsapp] numéro ${number} re-scanné par l'agent ${agentId} : ` +
+        `déconnexion de l'ancien agent ${id} (1 numéro = 1 agent)`
+      );
+      await this.stop(id);
+      this.clearSession(id);
+      await db.agent.update({
+        where: { id },
+        data: { whatsapp_number: null, whatsapp_status: 'disconnected' },
+      }).catch(() => { /* agent supprimé entre-temps */ });
+    }
   }
 
   async stop(agentId) {
