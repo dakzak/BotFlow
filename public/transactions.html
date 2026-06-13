@@ -4,110 +4,210 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BotFlow — Transactions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };</script>
+  <link rel="stylesheet" href="/css/botflow.css" />
   <script src="/js/common.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-900" x-data="transactionsPage()" x-init="init()">
+<body class="bf-app-bg text-slate-900 antialiased" x-data="transactionsPage()" x-init="init()">
 
-  <header class="bg-slate-950 text-white">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
-      <div class="flex items-center gap-4 text-sm">
-        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
-        <button @click="logout()" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">Déconnexion</button>
-      </div>
-    </div>
-  </header>
+  <!-- ===== Barre latérale ===== -->
+  <aside class="fixed inset-y-0 left-0 z-40 w-72 bg-slate-950 text-slate-300 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200"
+    :class="sidebarOpen && 'translate-x-0'">
+    <a href="/dashboard.html" class="flex items-center gap-2.5 px-5 h-16 border-b border-white/5 shrink-0">
+      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-lg shadow-lg shadow-emerald-500/30">🤖</span>
+      <span class="text-lg font-extrabold tracking-tight text-white">Bot<span class="bf-gradient-text">Flow</span></span>
+    </a>
 
-  <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-12 gap-6">
-
-    <aside class="col-span-12 md:col-span-3">
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-bold">Mes agents</h2>
-          <span class="text-xs text-slate-500" x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
+    <div class="flex-1 overflow-y-auto px-3 py-5 space-y-7">
+      <div>
+        <div class="px-2 mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-500">
+          <span>Mes agents</span>
+          <span x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
         </div>
         <template x-for="agent in agents" :key="agent.id">
-          <button @click="selectAgent(agent)"
-            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
-            :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
-            <div class="font-medium" x-text="agent.name"></div>
-            <div class="text-xs flex items-center gap-1.5 mt-0.5">
-              <span class="inline-block w-2 h-2 rounded-full"
-                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'"></span>
-              <span class="text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Déconnecté'"></span>
-            </div>
+          <button @click="selectAgent(agent); sidebarOpen = false"
+            class="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 mb-1 text-left transition-colors"
+            :class="current && current.id === agent.id ? 'bg-white/10 text-white' : 'hover:bg-white/5'">
+            <span class="relative w-9 h-9 rounded-xl grid place-items-center text-xs font-bold shrink-0"
+              :class="current && current.id === agent.id ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950' : 'bg-white/10 text-slate-300'">
+              <span x-text="initials(agent.name)"></span>
+              <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-slate-950"
+                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-400' : 'bg-slate-600'"></span>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold truncate" x-text="agent.name"></span>
+              <span class="block text-[11px] text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Hors ligne'"></span>
+            </span>
           </button>
         </template>
-        <a href="/agent-nouveau.html" class="block text-center w-full mt-3 bg-slate-950 hover:bg-slate-800 text-white rounded-lg py-2.5 font-medium">+ Nouvel agent</a>
+        <a href="/agent-nouveau.html"
+          class="flex items-center justify-center gap-1.5 w-full mt-2 rounded-xl border border-dashed border-white/15 hover:border-emerald-400/60 hover:text-emerald-300 px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          Nouvel agent
+        </a>
       </div>
-    </aside>
 
-    <main class="col-span-12 md:col-span-9">
-      <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+      <div>
+        <div class="px-2 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">Menu</div>
         <template x-for="t in tabs" :key="t.id">
-          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
-            :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
-            x-text="t.label"></a>
+          <a :href="t.href"
+            class="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1 text-sm font-semibold transition-colors"
+            :class="page === t.id ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/10 text-emerald-300 shadow-inner' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+            <span x-html="navIcons[t.id]"></span>
+            <span x-text="t.label"></span>
+            <span x-show="page === t.id" class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          </a>
         </template>
-      </nav>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-white/5 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-xs font-bold text-white shrink-0" x-text="org ? initials(org.name) : '…'"></span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-semibold text-white truncate" x-text="org ? org.name : ''"></span>
+          <span class="bf-badge bf-badge-emerald !bg-emerald-500/15 !text-emerald-300 mt-0.5" x-text="org ? org.plan : ''"></span>
+        </span>
+        <button @click="logout()" title="Déconnexion" class="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-white/5 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- ===== Contenu ===== -->
+  <div class="lg:pl-72 min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70">
+      <div class="px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <button @click="sidebarOpen = true" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-extrabold tracking-tight leading-tight">Transactions</h1>
+            <p class="text-xs text-slate-400 truncate">Réservations, commandes et demandes enregistrées par l'agent</p>
+          </div>
+        </div>
+        <button @click="exportCsv()" x-show="current" x-cloak class="bf-btn bf-btn-dark !py-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 px-4 sm:px-8 py-7 w-full max-w-6xl mx-auto">
 
       <template x-if="error">
-        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm bf-rise">
+          <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.344 3.708c.866 1.5-.217 3.374-1.948 3.374H4.604c-1.73 0-2.813-1.874-1.948-3.374L10.051 3.378c.866-1.5 3.032-1.5 3.898 0l7.395 12.83zM12 15.75h.007v.008H12v-.008z"/></svg>
+          <span x-text="error"></span>
+        </div>
       </template>
 
       <template x-if="!current">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-          <p class="text-sm">Aucun agent — <a href="/agent-nouveau.html" class="text-emerald-600 hover:underline">créez-en un</a> pour voir ses transactions.</p>
+        <div class="bf-card p-14 text-center bf-rise">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 grid place-items-center text-3xl">🗂️</div>
+          <p class="font-bold text-slate-700 mb-1">Aucun agent</p>
+          <p class="text-sm text-slate-500 mb-5"><a href="/agent-nouveau.html" class="text-emerald-600 font-semibold hover:underline">Créez un agent</a> pour suivre ses réservations et commandes ici.</p>
         </div>
       </template>
 
       <template x-if="current">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold">Réservations / commandes</h3>
-            <div class="flex gap-2 items-center">
-              <select x-model="txFilter" @change="loadTransactions()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
-                <option value="">Tous statuts</option>
-                <option value="pending">En attente</option>
-                <option value="confirmed">Confirmé</option>
-                <option value="cancelled">Annulé</option>
-              </select>
-              <button @click="exportCsv()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5 text-sm">Export CSV</button>
+        <div class="space-y-6">
+
+          <!-- Compteurs par statut -->
+          <section class="grid grid-cols-3 gap-4">
+            <div class="bf-card p-4 flex items-center gap-3.5 bf-rise bf-rise-1">
+              <span class="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </span>
+              <div><div class="text-xl font-black leading-none" x-text="countBy('pending')"></div><div class="text-xs font-medium text-slate-500 mt-1">En attente</div></div>
             </div>
-          </div>
-          <template x-if="!transactions.length">
-            <p class="text-sm text-slate-500">Aucune transaction.</p>
-          </template>
-          <template x-for="tx in transactions" :key="tx.id">
-            <div class="border-t border-slate-100 py-3 flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <div class="text-sm font-medium">
-                  <span class="inline-block rounded px-1.5 py-0.5 text-xs mr-1"
-                    :class="tx.transaction_type === 'reservation' ? 'bg-emerald-100 text-emerald-700' : (tx.transaction_type === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600')"
-                    x-text="{reservation: 'Réservation', order: 'Commande', inquiry: 'Demande'}[tx.transaction_type] || tx.transaction_type"></span>
-                  <span x-text="tx.customer_name || tx.customer_id"></span>
-                </div>
-                <div class="mt-1.5" x-show="Object.keys(tx.data).length">
-                  <template x-for="(v, k) in tx.data" :key="k">
-                    <span class="inline-block bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-1"
-                      x-show="String(v == null ? '' : v).trim() !== ''">
-                      <span class="text-slate-400" x-text="k + ' : '"></span><span x-text="v"></span>
-                    </span>
-                  </template>
-                </div>
-                <div class="text-xs text-slate-400 mt-1" x-text="formatDate(tx.created_at)"></div>
+            <div class="bf-card p-4 flex items-center gap-3.5 bf-rise bf-rise-2">
+              <span class="w-10 h-10 rounded-xl bg-emerald-100 grid place-items-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </span>
+              <div><div class="text-xl font-black leading-none" x-text="countBy('confirmed')"></div><div class="text-xs font-medium text-slate-500 mt-1">Confirmées</div></div>
+            </div>
+            <div class="bf-card p-4 flex items-center gap-3.5 bf-rise bf-rise-3">
+              <span class="w-10 h-10 rounded-xl bg-red-100 grid place-items-center">
+                <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </span>
+              <div><div class="text-xl font-black leading-none" x-text="countBy('cancelled')"></div><div class="text-xs font-medium text-slate-500 mt-1">Annulées</div></div>
+            </div>
+          </section>
+
+          <!-- Liste -->
+          <section class="bf-card bf-rise">
+            <div class="px-6 pt-5 pb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-extrabold tracking-tight">Historique</h3>
+                <p class="text-xs text-slate-400 mt-0.5" x-text="filtered().length + ' transaction(s) affichée(s)'"></p>
               </div>
-              <select :value="tx.status" @change="setTxStatus(tx, $event.target.value)"
-                class="border rounded-lg px-2 py-1 text-xs"
-                :class="{'border-amber-400 text-amber-700': tx.status==='pending', 'border-emerald-400 text-emerald-700': tx.status==='confirmed', 'border-red-300 text-red-600': tx.status==='cancelled'}">
-                <option value="pending">En attente</option>
-                <option value="confirmed">Confirmé</option>
-                <option value="cancelled">Annulé</option>
-              </select>
+              <div class="flex gap-2">
+                <template x-for="f in filters" :key="f.value">
+                  <button class="bf-pill" :class="txFilter === f.value && 'bf-pill-active'"
+                    @click="txFilter = f.value" x-text="f.label"></button>
+                </template>
+              </div>
             </div>
-          </template>
+
+            <template x-if="!filtered().length">
+              <div class="p-10 text-center">
+                <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 grid place-items-center text-2xl">📭</div>
+                <p class="text-sm font-semibold text-slate-600">Aucune transaction</p>
+                <p class="text-xs text-slate-400 mt-1">Les réservations et commandes prises par votre agent apparaîtront ici.</p>
+              </div>
+            </template>
+
+            <div class="divide-y divide-slate-100">
+              <template x-for="tx in filtered()" :key="tx.id">
+                <div class="px-6 py-4 flex items-start gap-4 hover:bg-slate-50/80 transition-colors">
+                  <span class="w-10 h-10 rounded-xl grid place-items-center shrink-0 mt-0.5"
+                    :class="{ reservation: 'bg-emerald-100', order: 'bg-sky-100', inquiry: 'bg-slate-100' }[tx.transaction_type] || 'bg-slate-100'">
+                    <svg x-show="tx.transaction_type === 'reservation'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                    <svg x-show="tx.transaction_type === 'order'" class="w-5 h-5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                    <svg x-show="tx.transaction_type !== 'reservation' && tx.transaction_type !== 'order'" class="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
+                  </span>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="bf-badge"
+                        :class="{ reservation: 'bf-badge-emerald', order: 'bf-badge-blue', inquiry: 'bf-badge-slate' }[tx.transaction_type] || 'bf-badge-slate'"
+                        x-text="{ reservation: 'Réservation', order: 'Commande', inquiry: 'Demande' }[tx.transaction_type] || tx.transaction_type"></span>
+                      <span class="font-semibold text-sm" x-text="tx.customer_name || tx.customer_id"></span>
+                      <span class="text-xs text-slate-400" x-text="'· ' + formatDate(tx.created_at)"></span>
+                    </div>
+
+                    <div class="mt-2 flex flex-wrap gap-1.5" x-show="Object.keys(tx.data).length">
+                      <template x-for="(v, k) in tx.data" :key="k">
+                        <span class="inline-flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 text-slate-700 rounded-lg px-2 py-1 text-xs"
+                          x-show="String(v == null ? '' : v).trim() !== ''">
+                          <svg x-show="k === 'start_date' || k === 'end_date' || k === 'date'" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3.75 18.75V7.5a2.25 2.25 0 012.25-2.25h12a2.25 2.25 0 012.25 2.25v11.25a1.5 1.5 0 01-1.5 1.5h-13.5a1.5 1.5 0 01-1.5-1.5z"/></svg>
+                          <span class="text-slate-400 font-medium" x-text="k"></span>
+                          <span class="font-semibold" x-text="v"></span>
+                        </span>
+                      </template>
+                    </div>
+                  </div>
+
+                  <select :value="tx.status" @change="setTxStatus(tx, $event.target.value)"
+                    class="bf-status-select shrink-0"
+                    :class="{ pending: 'bf-status-pending', confirmed: 'bf-status-confirmed', cancelled: 'bf-status-cancelled' }[tx.status]">
+                    <option value="pending">En attente</option>
+                    <option value="confirmed">Confirmé</option>
+                    <option value="cancelled">Annulé</option>
+                  </select>
+                </div>
+              </template>
+            </div>
+          </section>
         </div>
       </template>
     </main>
@@ -119,6 +219,12 @@
         ...baseApp('transactions'),
         transactions: [],
         txFilter: '',
+        filters: [
+          { value: '', label: 'Toutes' },
+          { value: 'pending', label: 'En attente' },
+          { value: 'confirmed', label: 'Confirmées' },
+          { value: 'cancelled', label: 'Annulées' },
+        ],
 
         async init() {
           if (await this.initBase()) this.onAgentChange();
@@ -129,11 +235,20 @@
           this.loadTransactions();
         },
 
+        countBy(status) {
+          return this.transactions.filter((t) => t.status === status).length;
+        },
+
+        /** Filtrage côté client : les compteurs restent calculés sur la liste complète. */
+        filtered() {
+          if (!this.txFilter) return this.transactions;
+          return this.transactions.filter((t) => t.status === this.txFilter);
+        },
+
         async loadTransactions() {
           if (!this.current) return;
           try {
-            const q = this.txFilter ? '?status=' + this.txFilter : '';
-            this.transactions = await this.api('/agents/' + this.current.id + '/transactions' + q);
+            this.transactions = await this.api('/agents/' + this.current.id + '/transactions');
           } catch (err) { this.error = err.message; }
         },
 

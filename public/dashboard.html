@@ -4,126 +4,265 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BotFlow — Vue d'ensemble</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };</script>
+  <link rel="stylesheet" href="/css/botflow.css" />
   <script src="/js/common.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-900" x-data="dashboardPage()" x-init="init()">
+<body class="bf-app-bg text-slate-900 antialiased" x-data="dashboardPage()" x-init="init()">
 
-  <header class="bg-slate-950 text-white">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
-      <div class="flex items-center gap-4 text-sm">
-        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
-        <button @click="logout()" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">Déconnexion</button>
-      </div>
-    </div>
-  </header>
+  <!-- ===== Barre latérale ===== -->
+  <aside class="fixed inset-y-0 left-0 z-40 w-72 bg-slate-950 text-slate-300 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200"
+    :class="sidebarOpen && 'translate-x-0'">
+    <a href="/dashboard.html" class="flex items-center gap-2.5 px-5 h-16 border-b border-white/5 shrink-0">
+      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-lg shadow-lg shadow-emerald-500/30">🤖</span>
+      <span class="text-lg font-extrabold tracking-tight text-white">Bot<span class="bf-gradient-text">Flow</span></span>
+    </a>
 
-  <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-12 gap-6">
-
-    <!-- Barre latérale : agents -->
-    <aside class="col-span-12 md:col-span-3">
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-bold">Mes agents</h2>
-          <span class="text-xs text-slate-500" x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
+    <div class="flex-1 overflow-y-auto px-3 py-5 space-y-7">
+      <div>
+        <div class="px-2 mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-500">
+          <span>Mes agents</span>
+          <span x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
         </div>
         <template x-for="agent in agents" :key="agent.id">
-          <button @click="selectAgent(agent)"
-            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
-            :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
-            <div class="font-medium" x-text="agent.name"></div>
-            <div class="text-xs flex items-center gap-1.5 mt-0.5">
-              <span class="inline-block w-2 h-2 rounded-full"
-                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'"></span>
-              <span class="text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Déconnecté'"></span>
-            </div>
+          <button @click="selectAgent(agent); sidebarOpen = false"
+            class="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 mb-1 text-left transition-colors"
+            :class="current && current.id === agent.id ? 'bg-white/10 text-white' : 'hover:bg-white/5'">
+            <span class="relative w-9 h-9 rounded-xl grid place-items-center text-xs font-bold shrink-0"
+              :class="current && current.id === agent.id ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950' : 'bg-white/10 text-slate-300'">
+              <span x-text="initials(agent.name)"></span>
+              <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-slate-950"
+                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-400' : 'bg-slate-600'"></span>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold truncate" x-text="agent.name"></span>
+              <span class="block text-[11px] text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Hors ligne'"></span>
+            </span>
           </button>
         </template>
-        <a href="/agent-nouveau.html" class="block text-center w-full mt-3 bg-slate-950 hover:bg-slate-800 text-white rounded-lg py-2.5 font-medium">+ Nouvel agent</a>
+        <a href="/agent-nouveau.html"
+          class="flex items-center justify-center gap-1.5 w-full mt-2 rounded-xl border border-dashed border-white/15 hover:border-emerald-400/60 hover:text-emerald-300 px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          Nouvel agent
+        </a>
       </div>
-    </aside>
 
-    <!-- Contenu -->
-    <main class="col-span-12 md:col-span-9">
-      <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+      <div>
+        <div class="px-2 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">Menu</div>
         <template x-for="t in tabs" :key="t.id">
-          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
-            :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
-            x-text="t.label"></a>
+          <a :href="t.href"
+            class="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1 text-sm font-semibold transition-colors"
+            :class="page === t.id ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/10 text-emerald-300 shadow-inner' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+            <span x-html="navIcons[t.id]"></span>
+            <span x-text="t.label"></span>
+            <span x-show="page === t.id" class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          </a>
         </template>
-      </nav>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-white/5 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-xs font-bold text-white shrink-0" x-text="org ? initials(org.name) : '…'"></span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-semibold text-white truncate" x-text="org ? org.name : ''"></span>
+          <span class="bf-badge bf-badge-emerald !bg-emerald-500/15 !text-emerald-300 mt-0.5" x-text="org ? org.plan : ''"></span>
+        </span>
+        <button @click="logout()" title="Déconnexion" class="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-white/5 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- ===== Contenu ===== -->
+  <div class="lg:pl-72 min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70">
+      <div class="px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <button @click="sidebarOpen = true" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-extrabold tracking-tight leading-tight">Vue d'ensemble</h1>
+            <p class="text-xs text-slate-400 truncate">Canal, performances et conversations en temps réel</p>
+          </div>
+        </div>
+        <div x-show="current" x-cloak class="hidden sm:flex items-center gap-2.5 bg-white border border-slate-200 rounded-full pl-1.5 pr-4 py-1.5 shadow-sm">
+          <span class="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-[10px] font-bold text-slate-950" x-text="current ? initials(current.name) : ''"></span>
+          <span class="text-sm font-semibold" x-text="current ? current.name : ''"></span>
+          <span class="bf-dot" :class="channel.status === 'connected' ? 'bf-dot-live' : 'bg-slate-300'"></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 px-4 sm:px-8 py-7 w-full max-w-6xl mx-auto">
 
       <template x-if="error">
-        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm bf-rise">
+          <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.344 3.708c.866 1.5-.217 3.374-1.948 3.374H4.604c-1.73 0-2.813-1.874-1.948-3.374L10.051 3.378c.866-1.5 3.032-1.5 3.898 0l7.395 12.83zM12 15.75h.007v.008H12v-.008z"/></svg>
+          <span x-text="error"></span>
+        </div>
       </template>
 
+      <!-- État vide : aucun agent -->
       <template x-if="!current">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-          <div class="text-5xl mb-4">🤖</div>
-          <p class="font-medium text-slate-700 mb-1">Aucun agent pour le moment</p>
-          <p class="text-sm mb-4">Créez votre premier agent : l'assistant vous guide en 5 étapes.</p>
-          <a href="/agent-nouveau.html" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg px-5 py-2.5 font-medium">Créer un agent</a>
+        <div class="bf-card p-14 text-center bf-rise">
+          <div class="w-20 h-20 mx-auto mb-5 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-4xl shadow-xl shadow-emerald-500/30 bf-float">🤖</div>
+          <h2 class="text-xl font-extrabold mb-1.5">Bienvenue sur BotFlow</h2>
+          <p class="text-sm text-slate-500 max-w-md mx-auto mb-6">Créez votre premier agent IA : décrivez votre activité, connectez vos données et votre WhatsApp — l'assistant vous guide en 5 étapes.</p>
+          <a href="/agent-nouveau.html" class="bf-btn bf-btn-primary">Créer mon premier agent
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+          </a>
         </div>
       </template>
 
       <template x-if="current">
-        <div class="space-y-4">
-          <!-- État du canal -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between">
-            <div>
-              <h3 class="font-bold mb-1">Canal WhatsApp</h3>
-              <div class="flex items-center gap-2 text-sm">
-                <span class="inline-block w-2.5 h-2.5 rounded-full"
-                  :class="channel.status === 'connected' ? 'bg-emerald-500' : (channel.status === 'disconnected' ? 'bg-red-400' : 'bg-amber-400')"></span>
-                <span x-text="statusLabel(channel.status)"></span>
+        <div class="space-y-6">
+
+          <!-- Canal WhatsApp -->
+          <section class="bf-card bf-card-accent p-6 bf-rise">
+            <div class="flex flex-col md:flex-row md:items-center gap-5 justify-between">
+              <div class="flex items-center gap-4 min-w-0">
+                <span class="w-14 h-14 rounded-2xl grid place-items-center shrink-0 shadow-lg"
+                  :class="channel.status === 'connected' ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/40' : 'bg-slate-100 shadow-transparent'">
+                  <svg class="w-8 h-8" :class="channel.status === 'connected' ? 'text-white' : 'text-slate-400'" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2.5 mb-0.5">
+                    <h2 class="font-extrabold tracking-tight">Canal WhatsApp</h2>
+                    <span class="bf-badge" :class="channel.status === 'connected' ? 'bf-badge-emerald' : (channel.status === 'disconnected' ? 'bf-badge-red' : 'bf-badge-amber')">
+                      <span class="bf-dot" :class="channel.status === 'connected' ? 'bf-dot-live' : (channel.status === 'disconnected' ? 'bg-red-400' : 'bg-amber-400')"></span>
+                      <span x-text="statusLabel(channel.status)"></span>
+                    </span>
+                  </div>
+                  <p class="text-sm text-slate-500" x-text="channel.status === 'connected'
+                    ? 'Votre agent répond automatiquement aux messages de vos clients, 24h/24.'
+                    : 'Connectez le numéro WhatsApp de votre entreprise pour activer les réponses automatiques.'"></p>
+                </div>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button x-show="channel.status !== 'connected'" @click="connectChannel()" class="bf-btn bf-btn-primary">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                  Connecter
+                </button>
+                <button x-show="channel.status === 'connected'" @click="disconnectChannel()" class="bf-btn bf-btn-ghost">Déconnecter</button>
               </div>
             </div>
-            <div class="flex gap-2">
-              <button x-show="channel.status !== 'connected'" @click="connectChannel()" class="bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg px-4 py-2 text-sm font-medium">Connecter</button>
-              <button x-show="channel.status === 'connected'" @click="disconnectChannel()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm">Déconnecter</button>
-            </div>
-          </div>
 
-          <!-- QR code -->
-          <div x-show="channel.qr && channel.status !== 'connected'" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 text-center">
-            <p class="text-sm text-slate-600 mb-3">Scannez ce QR code avec WhatsApp (Appareils connectés → Connecter un appareil) :</p>
-            <img :src="channel.qr" class="mx-auto w-56 h-56" alt="QR code WhatsApp" />
-          </div>
+            <!-- QR code -->
+            <div x-show="channel.qr && channel.status !== 'connected'" x-cloak class="mt-6 grid md:grid-cols-2 gap-6 items-center border-t border-slate-100 pt-6">
+              <ol class="space-y-4">
+                <template x-for="(s, i) in ['Ouvrez WhatsApp sur le téléphone de l\'entreprise', 'Paramètres → Appareils connectés → Connecter un appareil', 'Scannez le QR code affiché ci-contre']" :key="i">
+                  <li class="flex items-start gap-3.5">
+                    <span class="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 text-xs font-extrabold grid place-items-center shrink-0" x-text="i + 1"></span>
+                    <span class="text-sm text-slate-600 pt-1" x-text="s"></span>
+                  </li>
+                </template>
+              </ol>
+              <div class="justify-self-center">
+                <div class="p-4 bg-white rounded-2xl border-2 border-dashed border-emerald-300 shadow-xl shadow-emerald-500/10">
+                  <img :src="channel.qr" class="w-52 h-52 rounded-lg" alt="QR code WhatsApp" />
+                </div>
+                <p class="text-center text-xs text-slate-400 mt-3">Le QR se régénère automatiquement</p>
+              </div>
+            </div>
+          </section>
 
           <!-- Statistiques -->
-          <div class="grid grid-cols-3 gap-4">
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-              <div class="text-2xl font-bold" x-text="overview ? overview.conversationsToday : '—'"></div>
-              <div class="text-sm text-slate-500">Conversations aujourd'hui</div>
+          <section class="grid sm:grid-cols-3 gap-5">
+            <div class="bf-card bf-card-hover p-5 bf-rise bf-rise-1">
+              <div class="flex items-center justify-between mb-4">
+                <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400/15 to-teal-500/15 grid place-items-center">
+                  <svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+                </span>
+                <span class="bf-badge bf-badge-emerald">aujourd'hui</span>
+              </div>
+              <template x-if="overview"><div class="text-3xl font-black tracking-tight" x-text="overview.conversationsToday"></div></template>
+              <template x-if="!overview"><div class="bf-skeleton h-9 w-16"></div></template>
+              <div class="text-sm font-medium text-slate-500 mt-1">Conversations</div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-              <div class="text-2xl font-bold" x-text="overview ? overview.transactionsCount : '—'"></div>
-              <div class="text-sm text-slate-500">Transactions</div>
+
+            <div class="bf-card bf-card-hover p-5 bf-rise bf-rise-2">
+              <div class="flex items-center justify-between mb-4">
+                <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400/15 to-blue-500/15 grid place-items-center">
+                  <svg class="w-6 h-6 text-sky-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </span>
+                <span class="bf-badge bf-badge-blue">total</span>
+              </div>
+              <template x-if="overview"><div class="text-3xl font-black tracking-tight" x-text="overview.transactionsCount"></div></template>
+              <template x-if="!overview"><div class="bf-skeleton h-9 w-16"></div></template>
+              <div class="text-sm font-medium text-slate-500 mt-1">Réservations & commandes</div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-              <div class="text-2xl font-bold" x-text="overview ? overview.activeCustomers : '—'"></div>
-              <div class="text-sm text-slate-500">Clients actifs (7 j)</div>
+
+            <div class="bf-card bf-card-hover p-5 bf-rise bf-rise-3">
+              <div class="flex items-center justify-between mb-4">
+                <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-400/15 to-fuchsia-500/15 grid place-items-center">
+                  <svg class="w-6 h-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                </span>
+                <span class="bf-badge bf-badge-violet">7 jours</span>
+              </div>
+              <template x-if="overview"><div class="text-3xl font-black tracking-tight" x-text="overview.activeCustomers"></div></template>
+              <template x-if="!overview"><div class="bf-skeleton h-9 w-16"></div></template>
+              <div class="text-sm font-medium text-slate-500 mt-1">Clients actifs</div>
             </div>
-          </div>
+          </section>
 
           <!-- Conversations récentes -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 class="font-bold mb-3">Conversations récentes</h3>
-            <template x-if="overview && !overview.recentConversations.length">
-              <p class="text-sm text-slate-500">Aucune conversation pour le moment.</p>
-            </template>
-            <template x-for="c in (overview ? overview.recentConversations : [])" :key="c.id">
-              <div class="border-t border-slate-100 py-2.5 flex items-center justify-between gap-4">
-                <div class="min-w-0">
-                  <div class="font-medium text-sm" x-text="c.customer_name || c.customer_id"></div>
-                  <div class="text-sm text-slate-500 truncate" x-text="c.lastMessage"></div>
-                </div>
-                <div class="text-xs text-slate-400 whitespace-nowrap" x-text="formatDate(c.last_message_at)"></div>
+          <section class="bf-card bf-rise">
+            <div class="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-100">
+              <div>
+                <h3 class="font-extrabold tracking-tight">Conversations récentes</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Les 10 derniers échanges traités par votre agent</p>
+              </div>
+              <a href="/transactions.html" class="bf-btn bf-btn-ghost !py-1.5 !px-3 text-xs">Voir les transactions</a>
+            </div>
+
+            <template x-if="!overview">
+              <div class="p-6 space-y-4">
+                <template x-for="i in 3" :key="i">
+                  <div class="flex items-center gap-3">
+                    <div class="bf-skeleton w-10 h-10 !rounded-full"></div>
+                    <div class="flex-1 space-y-2"><div class="bf-skeleton h-3.5 w-40"></div><div class="bf-skeleton h-3 w-72"></div></div>
+                  </div>
+                </template>
               </div>
             </template>
-          </div>
+
+            <template x-if="overview && !overview.recentConversations.length">
+              <div class="p-10 text-center">
+                <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 grid place-items-center text-2xl">💬</div>
+                <p class="text-sm font-semibold text-slate-600">Aucune conversation pour le moment</p>
+                <p class="text-xs text-slate-400 mt-1">Dès qu'un client écrira à votre numéro WhatsApp, l'échange apparaîtra ici.</p>
+              </div>
+            </template>
+
+            <div class="divide-y divide-slate-100">
+              <template x-for="c in (overview ? overview.recentConversations : [])" :key="c.id">
+                <div class="px-6 py-3.5 flex items-center gap-4 hover:bg-slate-50/80 transition-colors">
+                  <span class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600 grid place-items-center text-xs font-bold shrink-0"
+                    x-text="initials(c.customer_name || c.customer_id)"></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-sm truncate" x-text="c.customer_name || c.customer_id"></span>
+                      <span class="bf-badge bf-badge-slate" x-text="c.channel"></span>
+                    </div>
+                    <p class="text-sm text-slate-500 truncate mt-0.5" x-text="c.lastMessage"></p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="text-xs text-slate-400 whitespace-nowrap" x-text="formatDate(c.last_message_at)"></div>
+                    <div class="text-[11px] text-slate-300 mt-0.5"><span x-text="c.messageCount"></span> messages</div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </section>
         </div>
       </template>
     </main>

@@ -4,128 +4,246 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BotFlow — Paramètres</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };</script>
+  <link rel="stylesheet" href="/css/botflow.css" />
   <script src="/js/common.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-900" x-data="parametresPage()" x-init="init()">
+<body class="bf-app-bg text-slate-900 antialiased" x-data="parametresPage()" x-init="init()">
 
-  <header class="bg-slate-950 text-white">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/dashboard.html" class="text-xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></a>
-      <div class="flex items-center gap-4 text-sm">
-        <span class="text-slate-300" x-text="org ? org.name + ' · ' + org.plan : ''"></span>
-        <button @click="logout()" class="border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5">Déconnexion</button>
-      </div>
-    </div>
-  </header>
+  <!-- ===== Barre latérale ===== -->
+  <aside class="fixed inset-y-0 left-0 z-40 w-72 bg-slate-950 text-slate-300 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200"
+    :class="sidebarOpen && 'translate-x-0'">
+    <a href="/dashboard.html" class="flex items-center gap-2.5 px-5 h-16 border-b border-white/5 shrink-0">
+      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-lg shadow-lg shadow-emerald-500/30">🤖</span>
+      <span class="text-lg font-extrabold tracking-tight text-white">Bot<span class="bf-gradient-text">Flow</span></span>
+    </a>
 
-  <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-12 gap-6">
-
-    <aside class="col-span-12 md:col-span-3">
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-bold">Mes agents</h2>
-          <span class="text-xs text-slate-500" x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
+    <div class="flex-1 overflow-y-auto px-3 py-5 space-y-7">
+      <div>
+        <div class="px-2 mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-500">
+          <span>Mes agents</span>
+          <span x-text="org ? agents.length + '/' + org.max_agents : ''"></span>
         </div>
         <template x-for="agent in agents" :key="agent.id">
-          <button @click="selectAgent(agent)"
-            class="w-full text-left rounded-lg px-3 py-2.5 mb-1 border"
-            :class="current && current.id === agent.id ? 'bg-emerald-50 border-emerald-400' : 'border-transparent hover:bg-slate-50'">
-            <div class="font-medium" x-text="agent.name"></div>
-            <div class="text-xs flex items-center gap-1.5 mt-0.5">
-              <span class="inline-block w-2 h-2 rounded-full"
-                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-500' : 'bg-slate-300'"></span>
-              <span class="text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Déconnecté'"></span>
-            </div>
+          <button @click="selectAgent(agent); sidebarOpen = false"
+            class="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 mb-1 text-left transition-colors"
+            :class="current && current.id === agent.id ? 'bg-white/10 text-white' : 'hover:bg-white/5'">
+            <span class="relative w-9 h-9 rounded-xl grid place-items-center text-xs font-bold shrink-0"
+              :class="current && current.id === agent.id ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950' : 'bg-white/10 text-slate-300'">
+              <span x-text="initials(agent.name)"></span>
+              <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-slate-950"
+                :class="agent.whatsapp_status === 'connected' ? 'bg-emerald-400' : 'bg-slate-600'"></span>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold truncate" x-text="agent.name"></span>
+              <span class="block text-[11px] text-slate-500" x-text="agent.whatsapp_status === 'connected' ? 'WhatsApp connecté' : 'Hors ligne'"></span>
+            </span>
           </button>
         </template>
-        <a href="/agent-nouveau.html" class="block text-center w-full mt-3 bg-slate-950 hover:bg-slate-800 text-white rounded-lg py-2.5 font-medium">+ Nouvel agent</a>
+        <a href="/agent-nouveau.html"
+          class="flex items-center justify-center gap-1.5 w-full mt-2 rounded-xl border border-dashed border-white/15 hover:border-emerald-400/60 hover:text-emerald-300 px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          Nouvel agent
+        </a>
       </div>
-    </aside>
 
-    <main class="col-span-12 md:col-span-9">
-      <nav class="flex gap-1 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+      <div>
+        <div class="px-2 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">Menu</div>
         <template x-for="t in tabs" :key="t.id">
-          <a :href="t.href" class="flex-1 text-center rounded-lg py-2 text-sm font-medium"
-            :class="page === t.id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'"
-            x-text="t.label"></a>
+          <a :href="t.href"
+            class="flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1 text-sm font-semibold transition-colors"
+            :class="page === t.id ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/10 text-emerald-300 shadow-inner' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+            <span x-html="navIcons[t.id]"></span>
+            <span x-text="t.label"></span>
+            <span x-show="page === t.id" class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          </a>
         </template>
-      </nav>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-white/5 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-xs font-bold text-white shrink-0" x-text="org ? initials(org.name) : '…'"></span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-semibold text-white truncate" x-text="org ? org.name : ''"></span>
+          <span class="bf-badge bf-badge-emerald !bg-emerald-500/15 !text-emerald-300 mt-0.5" x-text="org ? org.plan : ''"></span>
+        </span>
+        <button @click="logout()" title="Déconnexion" class="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-white/5 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- ===== Contenu ===== -->
+  <div class="lg:pl-72 min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70">
+      <div class="px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <button @click="sidebarOpen = true" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-extrabold tracking-tight leading-tight">Paramètres</h1>
+            <p class="text-xs text-slate-400 truncate" x-text="current ? 'Configuration de « ' + current.name + ' »' : 'Identité, source, IA et canal de l\'agent'"></p>
+          </div>
+        </div>
+        <button @click="saveSettings()" x-show="current" x-cloak class="bf-btn bf-btn-primary !py-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+          Enregistrer
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 px-4 sm:px-8 py-7 w-full max-w-4xl mx-auto">
 
       <template x-if="error">
-        <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm bf-rise">
+          <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.344 3.708c.866 1.5-.217 3.374-1.948 3.374H4.604c-1.73 0-2.813-1.874-1.948-3.374L10.051 3.378c.866-1.5 3.032-1.5 3.898 0l7.395 12.83zM12 15.75h.007v.008H12v-.008z"/></svg>
+          <span x-text="error"></span>
+        </div>
       </template>
       <template x-if="success">
-        <div class="bg-emerald-50 border border-emerald-300 text-emerald-700 rounded-lg px-4 py-3 mb-4 text-sm" x-text="success"></div>
+        <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 mb-5 text-sm bf-rise">
+          <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+          <span x-text="success"></span>
+        </div>
       </template>
 
       <template x-if="!current">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-          <p class="text-sm">Aucun agent — <a href="/agent-nouveau.html" class="text-emerald-600 hover:underline">créez-en un</a> pour le configurer.</p>
+        <div class="bf-card p-14 text-center bf-rise">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 grid place-items-center text-3xl">⚙️</div>
+          <p class="font-bold text-slate-700 mb-1">Aucun agent à configurer</p>
+          <p class="text-sm text-slate-500 mb-6">Créez votre premier agent : l'assistant vous guide en 5 étapes.</p>
+          <a href="/agent-nouveau.html" class="bf-btn bf-btn-primary">Créer un agent</a>
         </div>
       </template>
 
       <template x-if="current">
-        <div class="space-y-4">
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 class="font-bold mb-4">Identité & source de données</h3>
-            <label class="block text-sm text-slate-600 mb-1">Nom de l'agent</label>
-            <input x-model="settings.name" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" />
-            <label class="block text-sm text-slate-600 mb-1">Description de l'activité (l'IA s'en sert pour comprendre le métier)</label>
-            <textarea x-model="settings.description" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3"></textarea>
-            <label class="block text-sm text-slate-600 mb-1">
-              Source de données — URL Google Sheets ou domaine de votre site web
-              <span class="text-slate-400">(analyse détaillée et aperçu dans l'onglet <a href="/donnees.html" class="text-emerald-600 hover:underline">Données</a>)</span>
-            </label>
-            <input x-model="settings.source_ref" class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-3" placeholder="https://docs.google.com/spreadsheets/d/...  ou  monsite.ma" />
-            <label class="block text-sm text-slate-600 mb-1">Statut de l'agent</label>
-            <select x-model="settings.status" class="border border-slate-300 rounded-lg px-3 py-2">
-              <option value="active">Actif</option>
-              <option value="paused">En pause</option>
-            </select>
-          </div>
+        <div class="space-y-5">
 
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 class="font-bold mb-4">Intelligence artificielle</h3>
-            <div class="grid grid-cols-2 gap-3 mb-3">
+          <!-- Identité & source -->
+          <section class="bf-card bf-rise overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-white shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+              </span>
               <div>
-                <label class="block text-sm text-slate-600 mb-1">Fournisseur</label>
-                <select x-model="settings.ai_provider" class="w-full border border-slate-300 rounded-lg px-3 py-2">
-                  <option value="groq">Groq</option>
-                  <option value="gemini">Google Gemini</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm text-slate-600 mb-1">Modèle</label>
-                <input x-model="settings.ai_model" class="w-full border border-slate-300 rounded-lg px-3 py-2" :placeholder="settings.ai_provider === 'gemini' ? 'gemini-2.0-flash' : 'llama-3.1-8b-instant'" />
+                <h3 class="font-bold leading-tight">Identité & source de données</h3>
+                <p class="text-xs text-slate-400">Ce que l'IA sait de votre entreprise</p>
               </div>
             </div>
-            <label class="block text-sm text-slate-600 mb-1">
-              Clés d'API <span class="text-slate-400">(1ère = primaire, suivantes = secours · laisser vide pour garder les <span x-text="current.ai_keys_count"></span> clé(s) actuelle(s))</span>
-            </label>
-            <template x-for="(k, i) in settings.keys" :key="i">
-              <div class="flex gap-2 mb-2">
-                <input x-model="settings.keys[i]" type="password" class="flex-1 border border-slate-300 rounded-lg px-3 py-2" :placeholder="'Clé ' + (i + 1)" />
-                <button @click="settings.keys.splice(i, 1)" class="border border-slate-300 rounded-lg px-3 text-slate-500 hover:bg-slate-50">✕</button>
+            <div class="p-5 space-y-4">
+              <div>
+                <label class="bf-label">Nom de l'agent</label>
+                <input x-model="settings.name" class="bf-input" />
               </div>
-            </template>
-            <button @click="settings.keys.push('')" class="text-sm text-emerald-600 hover:underline">+ Ajouter une clé</button>
-          </div>
+              <div>
+                <label class="bf-label">Description de l'activité <span class="font-normal text-slate-400">(l'IA s'en sert pour comprendre le métier)</span></label>
+                <textarea x-model="settings.description" rows="3" class="bf-textarea"></textarea>
+              </div>
+              <div>
+                <label class="bf-label">
+                  Source de données — URL Google Sheets ou domaine de votre site web
+                </label>
+                <input x-model="settings.source_ref" class="bf-input" placeholder="https://docs.google.com/spreadsheets/d/...  ou  monsite.ma" />
+                <p class="bf-hint mt-1.5">Analyse détaillée et aperçu dans l'onglet <a href="/donnees.html" class="text-emerald-600 font-semibold hover:underline">Données</a>. Changer la source relance l'analyse automatiquement.</p>
+              </div>
+              <div>
+                <label class="bf-label">Statut de l'agent</label>
+                <div class="flex gap-2">
+                  <button type="button" @click="settings.status = 'active'" class="bf-pill" :class="settings.status === 'active' && 'bf-pill-active'">● Actif</button>
+                  <button type="button" @click="settings.status = 'paused'" class="bf-pill" :class="settings.status === 'paused' && 'bf-pill-active'">⏸ En pause</button>
+                </div>
+              </div>
+            </div>
+          </section>
 
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 class="font-bold mb-2">Canal WhatsApp</h3>
-            <p class="text-sm text-slate-500 mb-3">
-              Statut : <span class="font-medium" x-text="statusLabel(current.whatsapp_status)"></span> —
-              la connexion (QR code) se fait depuis la <a href="/dashboard.html" class="text-emerald-600 hover:underline">Vue d'ensemble</a>.
-            </p>
-            <button @click="disconnectChannel()" class="border border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm">Déconnecter et oublier la session</button>
-          </div>
+          <!-- Intelligence artificielle -->
+          <section class="bf-card bf-rise bf-rise-1 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 grid place-items-center text-white shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/></svg>
+              </span>
+              <div>
+                <h3 class="font-bold leading-tight">Intelligence artificielle</h3>
+                <p class="text-xs text-slate-400">Fournisseur, modèle et clés d'API de l'agent</p>
+              </div>
+            </div>
+            <div class="p-5 space-y-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="bf-label">Fournisseur</label>
+                  <select x-model="settings.ai_provider" class="bf-select">
+                    <option value="groq">Groq</option>
+                    <option value="gemini">Google Gemini</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="bf-label">Modèle</label>
+                  <input x-model="settings.ai_model" class="bf-input" :placeholder="settings.ai_provider === 'gemini' ? 'gemini-2.0-flash' : 'llama-3.1-8b-instant'" />
+                </div>
+              </div>
+              <div class="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 text-xs text-violet-700">
+                💡 Pour la darija et l'arabe, <strong>gemini-2.0-flash</strong> (Gemini) ou <strong>llama-3.3-70b-versatile</strong> (Groq) donnent les meilleures réponses.
+              </div>
+              <div>
+                <label class="bf-label">
+                  Clés d'API
+                  <span class="font-normal text-slate-400">— 1ère = primaire, suivantes = secours · laisser vide pour garder les <span class="font-semibold" x-text="current.ai_keys_count"></span> clé(s) actuelle(s)</span>
+                </label>
+                <template x-for="(k, i) in settings.keys" :key="i">
+                  <div class="flex gap-2 mb-2">
+                    <input x-model="settings.keys[i]" type="password" class="bf-input" :placeholder="'Clé ' + (i + 1)" />
+                    <button @click="settings.keys.splice(i, 1)" class="bf-btn bf-btn-ghost !px-3.5">✕</button>
+                  </div>
+                </template>
+                <button @click="settings.keys.push('')" class="text-sm font-semibold text-emerald-600 hover:underline">+ Ajouter une clé</button>
+              </div>
+            </div>
+          </section>
 
-          <div class="flex gap-3">
-            <button @click="saveSettings()" class="bg-slate-950 hover:bg-slate-800 text-white rounded-lg px-5 py-2.5 font-medium">Enregistrer</button>
-            <button @click="deleteAgent()" class="border border-red-300 text-red-600 hover:bg-red-50 rounded-lg px-5 py-2.5">Supprimer l'agent</button>
-          </div>
+          <!-- Canal WhatsApp -->
+          <section class="bf-card bf-rise bf-rise-2 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 grid place-items-center text-white shrink-0 text-base">💬</span>
+              <div>
+                <h3 class="font-bold leading-tight">Canal WhatsApp</h3>
+                <p class="text-xs text-slate-400">Connexion du numéro de l'agent</p>
+              </div>
+            </div>
+            <div class="p-5 flex flex-wrap items-center justify-between gap-4">
+              <div class="flex items-center gap-2.5 text-sm">
+                <span class="bf-dot" :class="current.whatsapp_status === 'connected' ? 'bf-dot-live' : 'bg-slate-300'"></span>
+                <span class="font-semibold" x-text="statusLabel(current.whatsapp_status)"></span>
+                <span class="text-slate-400">— la connexion (QR code) se fait depuis la <a href="/dashboard.html" class="text-emerald-600 font-semibold hover:underline">Vue d'ensemble</a></span>
+              </div>
+              <button @click="disconnectChannel()" class="bf-btn bf-btn-ghost !py-2">Déconnecter et oublier la session</button>
+            </div>
+          </section>
+
+          <!-- Zone dangereuse -->
+          <section class="bf-rise bf-rise-3 bg-red-50/60 border border-red-200 rounded-2xl overflow-hidden">
+            <div class="p-5 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 class="font-bold text-red-700">Zone dangereuse</h3>
+                <p class="text-xs text-red-500 mt-0.5">Supprime définitivement l'agent, ses conversations, ses transactions et sa session WhatsApp.</p>
+              </div>
+              <button @click="deleteAgent()" class="bf-btn bf-btn-danger !py-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                Supprimer l'agent
+              </button>
+            </div>
+          </section>
+
+          <!-- Bouton enregistrer (mobile, doublé du header) -->
+          <button @click="saveSettings()" class="bf-btn bf-btn-primary w-full !py-3 sm:hidden">Enregistrer les modifications</button>
         </div>
       </template>
     </main>

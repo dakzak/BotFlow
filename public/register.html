@@ -4,44 +4,116 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BotFlow — Créer un compte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };</script>
+  <link rel="stylesheet" href="/css/botflow.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center px-4">
-  <div class="w-full max-w-md" x-data="registerForm()">
-    <a href="/" class="block text-center text-2xl font-bold mb-8">🤖 Bot<span class="text-emerald-400">Flow</span></a>
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-8">
-      <h1 class="text-xl font-bold mb-6">Créer votre organisation</h1>
+<body class="min-h-screen bg-slate-950 text-slate-100 antialiased lg:grid lg:grid-cols-2">
 
-      <template x-if="error">
-        <div class="bg-red-500/10 border border-red-500/40 text-red-300 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
-      </template>
+  <!-- Panneau de marque (desktop) -->
+  <section class="hidden lg:flex relative flex-col justify-between overflow-hidden p-12 border-r border-white/5">
+    <div class="absolute inset-0" style="background: radial-gradient(50rem 35rem at 20% 0%, rgba(16,185,129,.16), transparent 60%);"></div>
 
-      <form @submit.prevent="submit()">
-        <label class="block text-sm text-slate-400 mb-1">Nom de l'entreprise / organisation</label>
-        <input x-model="orgName" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:border-emerald-500" placeholder="Atlas Location" />
+    <a href="/" class="relative flex items-center gap-2.5 text-xl font-extrabold w-fit">
+      <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-lg shadow-lg shadow-emerald-500/30">🤖</span>
+      Bot<span class="bf-gradient-text">Flow</span>
+    </a>
 
-        <label class="block text-sm text-slate-400 mb-1">E-mail</label>
-        <input x-model="email" type="email" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:border-emerald-500" placeholder="vous@entreprise.com" />
+    <div class="relative max-w-md">
+      <h1 class="text-4xl font-black leading-tight">Votre agent IA répond dans <span class="bf-gradient-text">10 minutes</span>.</h1>
+      <ul class="mt-8 space-y-4 text-sm text-slate-300">
+        <li class="flex items-start gap-3">
+          <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 grid place-items-center shrink-0 mt-px font-bold text-xs">1</span>
+          <span><strong class="text-white">Décrivez votre activité</strong> — l'IA comprend votre métier (location, boutique, restaurant, immobilier...).</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 grid place-items-center shrink-0 mt-px font-bold text-xs">2</span>
+          <span><strong class="text-white">Connectez votre catalogue</strong> — Google Sheets ou votre site web, colonnes détectées automatiquement.</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 grid place-items-center shrink-0 mt-px font-bold text-xs">3</span>
+          <span><strong class="text-white">Scannez le QR WhatsApp</strong> — votre bot vend en français, darija, arabe et anglais, 24h/24.</span>
+        </li>
+      </ul>
 
-        <label class="block text-sm text-slate-400 mb-1">Mot de passe (8 caractères min.)</label>
-        <input x-model="password" type="password" required minlength="8" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-6 focus:outline-none focus:border-emerald-500" />
+      <div class="bf-float mt-10 inline-flex items-center gap-3 bg-white/5 backdrop-blur border border-white/10 rounded-2xl px-5 py-4">
+        <span class="text-2xl">🚗</span>
+        <div class="text-[13px]">
+          <p class="font-semibold">Nouvelle réservation confirmée</p>
+          <p class="text-slate-400">Dacia Logan · 3 jours · Casablanca</p>
+        </div>
+        <span class="bf-badge bf-badge-emerald !bg-emerald-500/15 !text-emerald-300 ml-3">+ 750 DH</span>
+      </div>
+    </div>
 
-        <button type="submit" :disabled="loading" class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2.5 rounded-lg">
-          <span x-text="loading ? 'Création...' : 'Créer mon compte'"></span>
-        </button>
-      </form>
+    <p class="relative text-xs text-slate-600">© 2026 BotFlow — Plateforme SaaS de chatbots IA</p>
+  </section>
 
-      <p class="text-sm text-slate-400 mt-6 text-center">
-        Déjà un compte ? <a href="/login.html" class="text-emerald-400 hover:underline">Se connecter</a>
+  <!-- Formulaire -->
+  <section class="min-h-screen lg:min-h-0 flex items-center justify-center px-4 py-12 bg-slate-50 text-slate-900">
+    <div class="w-full max-w-md bf-rise" x-data="registerForm()">
+      <a href="/" class="lg:hidden flex items-center justify-center gap-2 text-xl font-extrabold mb-8 text-slate-900">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center">🤖</span>
+        Bot<span class="bf-gradient-text">Flow</span>
+      </a>
+
+      <div class="bf-card bf-card-accent p-8">
+        <h2 class="text-2xl font-extrabold tracking-tight">Créer votre organisation</h2>
+        <p class="text-sm text-slate-500 mt-1.5 mb-7">Gratuit · jusqu'à 3 agents IA · aucune carte bancaire.</p>
+
+        <template x-if="error">
+          <div class="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm bf-rise">
+            <svg class="w-5 h-5 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.344 3.708c.866 1.5-.217 3.374-1.948 3.374H4.604c-1.73 0-2.813-1.874-1.948-3.374L10.051 3.378c.866-1.5 3.032-1.5 3.898 0l7.395 12.83zM12 15.75h.007v.008H12v-.008z"/></svg>
+            <span x-text="error"></span>
+          </div>
+        </template>
+
+        <form @submit.prevent="submit()" class="space-y-5">
+          <div>
+            <label class="bf-label">Nom de l'entreprise / organisation</label>
+            <input x-model="orgName" required class="bf-input" placeholder="Atlas Location" />
+          </div>
+          <div>
+            <label class="bf-label">Adresse e-mail professionnelle</label>
+            <input x-model="email" type="email" required autocomplete="email" class="bf-input" placeholder="vous@entreprise.com" />
+          </div>
+          <div>
+            <label class="bf-label">Mot de passe</label>
+            <input x-model="password" :type="show ? 'text' : 'password'" required minlength="8" autocomplete="new-password" class="bf-input" placeholder="8 caractères minimum" />
+            <div class="flex items-center justify-between mt-2">
+              <div class="flex gap-1">
+                <span class="h-1 w-8 rounded-full transition-colors" :class="password.length >= 8 ? 'bg-emerald-400' : 'bg-slate-200'"></span>
+                <span class="h-1 w-8 rounded-full transition-colors" :class="password.length >= 11 ? 'bg-emerald-400' : 'bg-slate-200'"></span>
+                <span class="h-1 w-8 rounded-full transition-colors" :class="password.length >= 14 ? 'bg-emerald-400' : 'bg-slate-200'"></span>
+              </div>
+              <button type="button" @click="show = !show" class="text-xs font-semibold text-slate-400 hover:text-slate-600" x-text="show ? 'Masquer' : 'Afficher'"></button>
+            </div>
+          </div>
+          <button type="submit" :disabled="loading" class="bf-btn bf-btn-primary w-full !py-3">
+            <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            <span x-text="loading ? 'Création du compte...' : 'Créer mon organisation →'"></span>
+          </button>
+        </form>
+
+        <p class="text-sm text-slate-500 mt-7 text-center">
+          Déjà un compte ? <a href="/login.html" class="font-semibold text-emerald-600 hover:underline">Se connecter</a>
+        </p>
+      </div>
+
+      <p class="text-center text-xs text-slate-400 mt-6">
+        En créant un compte vous devenez propriétaire de votre organisation.
       </p>
     </div>
-  </div>
+  </section>
 
   <script>
     function registerForm() {
       return {
-        orgName: '', email: '', password: '', error: '', loading: false,
+        orgName: '', email: '', password: '', error: '', loading: false, show: false,
         async submit() {
           this.error = '';
           this.loading = true;

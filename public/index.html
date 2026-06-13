@@ -3,56 +3,251 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BotFlow — Chatbots IA pour entreprises, sans code</title>
+  <title>BotFlow — Chatbots IA WhatsApp pour entreprises, sans code</title>
+  <meta name="description" content="Créez et déployez votre agent IA sur WhatsApp en 10 minutes : catalogue connecté, réservations automatiques, multilingue (français, darija, arabe, anglais)." />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .glow { background: radial-gradient(60% 50% at 50% 0%, rgba(16,185,129,.22) 0%, rgba(2,6,23,0) 100%); }
+    .grid-bg { background-image: linear-gradient(rgba(148,163,184,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.08) 1px, transparent 1px); background-size: 44px 44px; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100">
-  <header class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
-    <div class="text-2xl font-bold">🤖 Bot<span class="text-emerald-400">Flow</span></div>
-    <nav class="flex items-center gap-4">
-      <a href="/login.html" class="text-slate-300 hover:text-white">Connexion</a>
-      <a href="/register.html" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-lg">Créer un compte</a>
-    </nav>
+<body class="bg-slate-950 text-slate-100 antialiased">
+
+  <!-- Navigation -->
+  <header class="sticky top-0 z-40 backdrop-blur bg-slate-950/80 border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-xl font-extrabold">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-slate-950">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" /></svg>
+        </span>
+        Bot<span class="text-emerald-400">Flow</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 text-sm text-slate-300">
+        <a href="#fonctionnalites" class="hover:text-white transition-colors">Fonctionnalités</a>
+        <a href="#comment" class="hover:text-white transition-colors">Comment ça marche</a>
+        <a href="#canaux" class="hover:text-white transition-colors">Canaux</a>
+        <a href="#tarifs" class="hover:text-white transition-colors">Tarifs</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="/login.html" class="text-sm text-slate-300 hover:text-white px-3 py-2 transition-colors">Connexion</a>
+        <a href="/register.html" class="text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg px-4 py-2 transition-colors">Essayer gratuitement</a>
+      </div>
+    </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-6">
-    <section class="text-center py-20">
-      <h1 class="text-4xl md:text-6xl font-extrabold leading-tight">
-        Votre chatbot IA sur WhatsApp<br />
-        <span class="text-emerald-400">en moins de 10 minutes</span>
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 glow"></div>
+    <div class="absolute inset-0 grid-bg"></div>
+    <div class="relative max-w-7xl mx-auto px-4 pt-20 pb-16 text-center">
+      <div class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-6">
+        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span></span>
+        Plateforme SaaS multi-organisation · WhatsApp en production
+      </div>
+      <h1 class="text-4xl md:text-6xl font-black leading-tight tracking-tight max-w-4xl mx-auto">
+        Votre commercial IA répond sur
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">WhatsApp, 24h/24</span>
       </h1>
-      <p class="mt-6 text-lg text-slate-400 max-w-2xl mx-auto">
-        Décrivez votre activité, connectez votre Google Sheet et votre numéro WhatsApp :
-        votre agent IA répond à vos clients 24h/24, présente votre catalogue et prend
-        les réservations. Sans écrire une seule ligne de code.
+      <p class="text-slate-400 text-lg max-w-2xl mx-auto mt-6">
+        Décrivez votre activité, connectez votre catalogue (Google Sheets ou votre site web)
+        et scannez un QR code : votre agent IA présente vos produits, répond en
+        <strong class="text-slate-200">français, darija, arabe et anglais</strong>, et enregistre
+        les réservations — sans écrire une ligne de code.
       </p>
-      <div class="mt-8 flex justify-center gap-4">
-        <a href="/register.html" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-6 py-3 rounded-lg text-lg">Commencer gratuitement</a>
-        <a href="/login.html" class="border border-slate-700 hover:border-slate-500 px-6 py-3 rounded-lg text-lg">J'ai déjà un compte</a>
+      <div class="flex flex-wrap items-center justify-center gap-4 mt-10">
+        <a href="/register.html" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl px-8 py-4 text-lg transition-colors shadow-lg shadow-emerald-500/25">Créer mon agent IA →</a>
+        <a href="#comment" class="border border-white/15 hover:border-white/30 text-slate-200 rounded-xl px-8 py-4 text-lg transition-colors">Voir comment ça marche</a>
       </div>
-    </section>
 
-    <section class="grid md:grid-cols-3 gap-6 pb-20">
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        <div class="text-3xl mb-3">📱</div>
-        <h3 class="font-bold text-lg mb-2">Multi-canal</h3>
-        <p class="text-slate-400">WhatsApp dès aujourd'hui. Instagram, Messenger, TikTok et agent vocal à venir — sans rien reconfigurer.</p>
+      <!-- Bandeau de chiffres -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 border border-white/5 rounded-2xl overflow-hidden max-w-3xl mx-auto mt-16">
+        <div class="bg-slate-950/60 px-6 py-5"><div class="text-2xl font-extrabold text-emerald-400">24/7</div><div class="text-xs text-slate-400 mt-1">Disponibilité</div></div>
+        <div class="bg-slate-950/60 px-6 py-5"><div class="text-2xl font-extrabold text-emerald-400">&lt; 10 min</div><div class="text-xs text-slate-400 mt-1">Configuration</div></div>
+        <div class="bg-slate-950/60 px-6 py-5"><div class="text-2xl font-extrabold text-emerald-400">4 langues</div><div class="text-xs text-slate-400 mt-1">FR · Darija · AR · EN</div></div>
+        <div class="bg-slate-950/60 px-6 py-5"><div class="text-2xl font-extrabold text-emerald-400">0 code</div><div class="text-xs text-slate-400 mt-1">100 % self-service</div></div>
       </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        <div class="text-3xl mb-3">📊</div>
-        <h3 class="font-bold text-lg mb-2">Vos données, votre IA</h3>
-        <p class="text-slate-400">Connectez votre catalogue Google Sheets : l'IA comprend vos colonnes et ne répond qu'à partir de VOS données.</p>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        <div class="text-3xl mb-3">🗂️</div>
-        <h3 class="font-bold text-lg mb-2">Réservations automatiques</h3>
-        <p class="text-slate-400">Chaque commande ou réservation est enregistrée et pilotable depuis votre tableau de bord, exportable en CSV.</p>
-      </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer class="border-t border-slate-800 py-8 text-center text-slate-500">
-    BotFlow — Plateforme SaaS de chatbots IA multi-canal
+  <!-- Canaux -->
+  <section id="canaux" class="border-y border-white/5 bg-slate-900/40">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+      <p class="text-center text-xs uppercase tracking-widest text-slate-500 font-semibold mb-6">Un seul agent, tous vos canaux</p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <span class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 rounded-full px-5 py-2.5 text-sm font-semibold">💬 WhatsApp <span class="text-[10px] bg-emerald-400 text-slate-950 rounded-full px-2 py-0.5 font-bold">DISPONIBLE</span></span>
+        <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-slate-400 rounded-full px-5 py-2.5 text-sm">📸 Instagram <span class="text-[10px] bg-white/10 rounded-full px-2 py-0.5">BIENTÔT</span></span>
+        <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-slate-400 rounded-full px-5 py-2.5 text-sm">💙 Messenger <span class="text-[10px] bg-white/10 rounded-full px-2 py-0.5">BIENTÔT</span></span>
+        <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-slate-400 rounded-full px-5 py-2.5 text-sm">🎵 TikTok <span class="text-[10px] bg-white/10 rounded-full px-2 py-0.5">BIENTÔT</span></span>
+        <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-slate-400 rounded-full px-5 py-2.5 text-sm">📞 Voix & Appels <span class="text-[10px] bg-white/10 rounded-full px-2 py-0.5">BIENTÔT</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fonctionnalités -->
+  <section id="fonctionnalites" class="max-w-7xl mx-auto px-4 py-24">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl md:text-4xl font-extrabold">Tout ce qu'il faut pour vendre en automatique</h2>
+      <p class="text-slate-400 mt-4 max-w-2xl mx-auto">Une plateforme pensée pour les agences de location, boutiques, restaurants et agences immobilières.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-colors">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-slate-950 mb-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802" /></svg>
+        </span>
+        <h3 class="font-bold text-lg mb-2">Conversations multilingues</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">Détection automatique de la langue de chaque client — français, darija (arabe ou latin), arabe, anglais — et réponse dans sa langue, même s'il en change en cours de discussion.</p>
+      </div>
+
+      <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-colors">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 grid place-items-center text-slate-950 mb-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>
+        </span>
+        <h3 class="font-bold text-lg mb-2">Catalogue toujours à jour</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">Connectez un Google Sheets ou directement votre site web : le bot lit vos produits, prix, villes et photos en temps réel. Modifiez votre feuille, le bot est à jour.</p>
+      </div>
+
+      <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-colors">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 grid place-items-center text-slate-950 mb-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
+        </span>
+        <h3 class="font-bold text-lg mb-2">Réservations sans conflit</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">Le bot connaît le planning : il refuse automatiquement une double réservation et propose la prochaine date disponible. Chaque confirmation devient une transaction dans votre tableau de bord.</p>
+      </div>
+
+      <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-colors">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 grid place-items-center text-slate-950 mb-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
+        </span>
+        <h3 class="font-bold text-lg mb-2">IA au choix, multi-clés</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">Groq ou Google Gemini, avec vos propres clés d'API et bascule automatique sur la clé de secours en cas de quota. Optimisé pour les offres gratuites.</p>
+      </div>
+
+      <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-colors">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 grid place-items-center text-slate-950 mb-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg>
+        </span>
+        <h3 class="font-bold text-lg mb-2">Plusieurs agents, une organisation</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">Un agent « Ventes », un agent « Support », un par ville ou par marque — chacun avec son numéro, son catalogue et son IA, totalement isolés. Un seul tableau de bord.</p>
+      </div>
+
+      <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-colors">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 grid place-items-center text-slate-950 mb-4">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>
+        </span>
+        <h3 class="font-bold text-lg mb-2">Pilotage en temps réel</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">Conversations du jour, clients actifs, réservations en attente ou confirmées, export CSV pour votre comptabilité — tout est visible en direct.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comment ça marche -->
+  <section id="comment" class="border-y border-white/5 bg-slate-900/40">
+    <div class="max-w-7xl mx-auto px-4 py-24">
+      <div class="text-center mb-14">
+        <h2 class="text-3xl md:text-4xl font-extrabold">En production en 3 étapes</h2>
+        <p class="text-slate-400 mt-4">Aucune compétence technique requise.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="relative bg-slate-950/60 border border-white/5 rounded-2xl p-8">
+          <span class="absolute -top-4 left-8 w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 font-extrabold grid place-items-center">1</span>
+          <h3 class="font-bold text-lg mt-3 mb-2">Décrivez votre activité</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">« Agence de location de voitures à Casablanca et Agadir, véhicules économiques et de luxe, prix en dirhams. » L'IA comprend votre métier à partir de cette description.</p>
+        </div>
+        <div class="relative bg-slate-950/60 border border-white/5 rounded-2xl p-8">
+          <span class="absolute -top-4 left-8 w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 font-extrabold grid place-items-center">2</span>
+          <h3 class="font-bold text-lg mt-3 mb-2">Connectez catalogue & WhatsApp</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Collez l'URL de votre Google Sheets ou de votre site : les colonnes sont détectées automatiquement. Puis scannez le QR code — comme WhatsApp Web.</p>
+        </div>
+        <div class="relative bg-slate-950/60 border border-white/5 rounded-2xl p-8">
+          <span class="absolute -top-4 left-8 w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 font-extrabold grid place-items-center">3</span>
+          <h3 class="font-bold text-lg mt-3 mb-2">Le bot vend pour vous</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Il présente vos produits avec photos, vérifie les disponibilités, enregistre les réservations — vous n'avez plus qu'à confirmer depuis le tableau de bord.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tarifs -->
+  <section id="tarifs" class="max-w-7xl mx-auto px-4 py-24">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl md:text-4xl font-extrabold">Des formules simples</h2>
+      <p class="text-slate-400 mt-4">Commencez gratuitement, évoluez quand votre activité grandit.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div class="bg-slate-900/60 border-2 border-emerald-500 rounded-2xl p-8 relative">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-950 text-xs font-bold rounded-full px-4 py-1">DISPONIBLE</span>
+        <h3 class="font-bold text-xl">Starter</h3>
+        <div class="mt-4 mb-6"><span class="text-4xl font-black">0 DH</span><span class="text-slate-400 text-sm"> / mois</span></div>
+        <ul class="space-y-3 text-sm text-slate-300">
+          <li class="flex gap-2"><span class="text-emerald-400">✓</span> Jusqu'à 3 agents IA</li>
+          <li class="flex gap-2"><span class="text-emerald-400">✓</span> WhatsApp illimité</li>
+          <li class="flex gap-2"><span class="text-emerald-400">✓</span> Catalogue Sheets ou site web</li>
+          <li class="flex gap-2"><span class="text-emerald-400">✓</span> Réservations & export CSV</li>
+          <li class="flex gap-2"><span class="text-emerald-400">✓</span> Vos clés IA (Groq / Gemini)</li>
+        </ul>
+        <a href="/register.html" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl py-3 mt-8 transition-colors">Commencer gratuitement</a>
+      </div>
+      <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-8 opacity-75">
+        <h3 class="font-bold text-xl">Pro</h3>
+        <div class="mt-4 mb-6"><span class="text-4xl font-black">Bientôt</span></div>
+        <ul class="space-y-3 text-sm text-slate-400">
+          <li class="flex gap-2"><span>✓</span> Agents illimités</li>
+          <li class="flex gap-2"><span>✓</span> Instagram & Messenger</li>
+          <li class="flex gap-2"><span>✓</span> Membres d'équipe & rôles</li>
+          <li class="flex gap-2"><span>✓</span> Statistiques avancées</li>
+        </ul>
+        <span class="block text-center border border-white/15 text-slate-400 rounded-xl py-3 mt-8">Sur la feuille de route</span>
+      </div>
+      <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-8 opacity-75">
+        <h3 class="font-bold text-xl">Business</h3>
+        <div class="mt-4 mb-6"><span class="text-4xl font-black">Sur mesure</span></div>
+        <ul class="space-y-3 text-sm text-slate-400">
+          <li class="flex gap-2"><span>✓</span> Voix & appels téléphoniques</li>
+          <li class="flex gap-2"><span>✓</span> Marque blanche revendeur</li>
+          <li class="flex gap-2"><span>✓</span> SLA & support dédié</li>
+          <li class="flex gap-2"><span>✓</span> Déploiement dédié</li>
+        </ul>
+        <span class="block text-center border border-white/15 text-slate-400 rounded-xl py-3 mt-8">Nous contacter</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA final -->
+  <section class="relative overflow-hidden border-t border-white/5">
+    <div class="absolute inset-0 glow"></div>
+    <div class="relative max-w-3xl mx-auto px-4 py-24 text-center">
+      <h2 class="text-3xl md:text-5xl font-black leading-tight">Vos clients écrivent déjà sur WhatsApp.<br /><span class="text-emerald-400">Répondez-leur 24h/24.</span></h2>
+      <a href="/register.html" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl px-10 py-4 text-lg mt-10 transition-colors shadow-lg shadow-emerald-500/25">Créer mon organisation gratuitement →</a>
+      <p class="text-xs text-slate-500 mt-4">Aucune carte bancaire requise · Configuration en 10 minutes</p>
+    </div>
+  </section>
+
+  <footer class="border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+      <div class="flex items-center gap-2 font-bold text-slate-300">
+        <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-slate-950 text-xs">B</span>
+        BotFlow
+      </div>
+      <nav class="flex gap-6">
+        <a href="#fonctionnalites" class="hover:text-slate-300 transition-colors">Fonctionnalités</a>
+        <a href="#tarifs" class="hover:text-slate-300 transition-colors">Tarifs</a>
+        <a href="/login.html" class="hover:text-slate-300 transition-colors">Connexion</a>
+      </nav>
+      <p>© 2026 BotFlow — Plateforme SaaS de chatbots IA</p>
+    </div>
   </footer>
 </body>
 </html>

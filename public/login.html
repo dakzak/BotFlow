@@ -4,41 +4,105 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BotFlow — Connexion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };</script>
+  <link rel="stylesheet" href="/css/botflow.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center px-4">
-  <div class="w-full max-w-md" x-data="loginForm()">
-    <a href="/" class="block text-center text-2xl font-bold mb-8">🤖 Bot<span class="text-emerald-400">Flow</span></a>
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-8">
-      <h1 class="text-xl font-bold mb-6">Connexion</h1>
+<body class="min-h-screen bg-slate-950 text-slate-100 antialiased lg:grid lg:grid-cols-2">
 
-      <template x-if="error">
-        <div class="bg-red-500/10 border border-red-500/40 text-red-300 rounded-lg px-4 py-3 mb-4 text-sm" x-text="error"></div>
-      </template>
+  <!-- Panneau de marque (desktop) -->
+  <section class="hidden lg:flex relative flex-col justify-between overflow-hidden p-12 border-r border-white/5">
+    <div class="absolute inset-0" style="background: radial-gradient(50rem 35rem at 20% 0%, rgba(16,185,129,.16), transparent 60%);"></div>
 
-      <form @submit.prevent="submit()">
-        <label class="block text-sm text-slate-400 mb-1">E-mail</label>
-        <input x-model="email" type="email" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:border-emerald-500" />
+    <a href="/" class="relative flex items-center gap-2.5 text-xl font-extrabold w-fit">
+      <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-lg shadow-lg shadow-emerald-500/30">🤖</span>
+      Bot<span class="bf-gradient-text">Flow</span>
+    </a>
 
-        <label class="block text-sm text-slate-400 mb-1">Mot de passe</label>
-        <input x-model="password" type="password" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 mb-6 focus:outline-none focus:border-emerald-500" />
+    <div class="relative max-w-md">
+      <h1 class="text-4xl font-black leading-tight">Reprenez la conversation avec vos clients.</h1>
+      <p class="text-slate-400 mt-5 leading-relaxed">Vos agents IA ont continué à répondre pendant votre absence. Connectez-vous pour voir les nouvelles réservations.</p>
 
-        <button type="submit" :disabled="loading" class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2.5 rounded-lg">
-          <span x-text="loading ? 'Connexion...' : 'Se connecter'"></span>
-        </button>
-      </form>
+      <!-- Aperçu conversation flottant -->
+      <div class="bf-float mt-10 bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 max-w-sm">
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center text-[10px] font-bold text-slate-950">BA</span>
+          <div>
+            <p class="text-sm font-semibold leading-none">Bot Atlas</p>
+            <p class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1"><span class="bf-dot bf-dot-live"></span> en ligne · répond en 3 s</p>
+          </div>
+        </div>
+        <div class="space-y-2.5 text-[13px]">
+          <p class="bg-white/10 rounded-2xl rounded-bl-md px-3.5 py-2 w-fit max-w-[85%]">wach kayna chi tomobil l'weekend ?</p>
+          <p class="bg-emerald-500/90 text-slate-950 font-medium rounded-2xl rounded-br-md px-3.5 py-2 w-fit max-w-[85%] ml-auto">Wakha ! 3andna Dacia Logan b 250 DH/jour, disponible samedi. Nreserviha lik ? 🚗</p>
+          <p class="bg-white/10 rounded-2xl rounded-bl-md px-3.5 py-2 w-fit max-w-[85%]">safi nakhdha</p>
+          <p class="text-[11px] text-slate-500 text-right">✓ Réservation enregistrée · 22:41</p>
+        </div>
+      </div>
+    </div>
 
-      <p class="text-sm text-slate-400 mt-6 text-center">
-        Pas encore de compte ? <a href="/register.html" class="text-emerald-400 hover:underline">Créer un compte</a>
+    <p class="relative text-xs text-slate-600">© 2026 BotFlow — Plateforme SaaS de chatbots IA</p>
+  </section>
+
+  <!-- Formulaire -->
+  <section class="min-h-screen lg:min-h-0 flex items-center justify-center px-4 py-12 bg-slate-50 text-slate-900">
+    <div class="w-full max-w-md bf-rise" x-data="loginForm()">
+      <a href="/" class="lg:hidden flex items-center justify-center gap-2 text-xl font-extrabold mb-8 text-slate-900">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center">🤖</span>
+        Bot<span class="bf-gradient-text">Flow</span>
+      </a>
+
+      <div class="bf-card bf-card-accent p-8">
+        <h2 class="text-2xl font-extrabold tracking-tight">Bon retour 👋</h2>
+        <p class="text-sm text-slate-500 mt-1.5 mb-7">Connectez-vous à votre espace organisation.</p>
+
+        <template x-if="error">
+          <div class="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm bf-rise">
+            <svg class="w-5 h-5 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.344 3.708c.866 1.5-.217 3.374-1.948 3.374H4.604c-1.73 0-2.813-1.874-1.948-3.374L10.051 3.378c.866-1.5 3.032-1.5 3.898 0l7.395 12.83zM12 15.75h.007v.008H12v-.008z"/></svg>
+            <span x-text="error"></span>
+          </div>
+        </template>
+
+        <form @submit.prevent="submit()" class="space-y-5">
+          <div>
+            <label class="bf-label">Adresse e-mail</label>
+            <input x-model="email" type="email" required autocomplete="email" class="bf-input" placeholder="vous@entreprise.com" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="bf-label !mb-0">Mot de passe</label>
+              <button type="button" @click="show = !show" class="text-xs font-semibold text-slate-400 hover:text-slate-600" x-text="show ? 'Masquer' : 'Afficher'"></button>
+            </div>
+            <input x-model="password" :type="show ? 'text' : 'password'" required autocomplete="current-password" class="bf-input" placeholder="••••••••" />
+          </div>
+          <button type="submit" :disabled="loading" class="bf-btn bf-btn-primary w-full !py-3">
+            <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            <span x-text="loading ? 'Connexion en cours...' : 'Se connecter'"></span>
+          </button>
+        </form>
+
+        <div class="flex items-center gap-3 my-7">
+          <span class="h-px flex-1 bg-slate-200"></span>
+          <span class="text-xs text-slate-400">Nouveau sur BotFlow ?</span>
+          <span class="h-px flex-1 bg-slate-200"></span>
+        </div>
+        <a href="/register.html" class="bf-btn bf-btn-ghost w-full !py-3">Créer mon organisation gratuitement</a>
+      </div>
+
+      <p class="text-center text-xs text-slate-400 mt-6">
+        Connexion chiffrée · Vos clés d'API ne sont jamais exposées
       </p>
     </div>
-  </div>
+  </section>
 
   <script>
     function loginForm() {
       return {
-        email: '', password: '', error: '', loading: false,
+        email: '', password: '', error: '', loading: false, show: false,
         async submit() {
           this.error = '';
           this.loading = true;

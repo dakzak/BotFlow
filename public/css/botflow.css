@@ -1,0 +1,174 @@
+/* ============================================================
+   BotFlow Design System — fondations partagées par toutes les pages.
+   Tailwind (CDN) fournit les utilitaires ; ce fichier ajoute les
+   tokens, animations et finitions que les classes ne couvrent pas.
+   ============================================================ */
+
+:root {
+  --bf-brand-from: #34d399; /* emerald-400 */
+  --bf-brand-to: #14b8a6;   /* teal-500   */
+  --bf-surface: #0f172a;    /* slate-900  */
+  --bf-ink: #020617;        /* slate-950  */
+}
+
+[x-cloak] { display: none !important; }
+
+html { scroll-behavior: smooth; }
+body { font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11'; }
+
+/* --- Barres de défilement discrètes ------------------------------ */
+* { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+aside *, .bf-dark * { scrollbar-color: #334155 transparent; }
+aside *::-webkit-scrollbar-thumb, .bf-dark *::-webkit-scrollbar-thumb { background: #334155; }
+
+/* --- Fond ambiant des pages applicatives -------------------------- */
+.bf-app-bg {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(40rem 28rem at 85% -10%, rgba(52, 211, 153, 0.10), transparent 60%),
+    radial-gradient(36rem 24rem at -10% 30%, rgba(20, 184, 166, 0.07), transparent 60%),
+    radial-gradient(circle, rgba(148, 163, 184, 0.14) 1px, transparent 1px);
+  background-size: auto, auto, 24px 24px;
+}
+
+/* --- Cartes ------------------------------------------------------- */
+.bf-card {
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.04), 0 8px 24px -16px rgba(2, 6, 23, 0.10);
+}
+.bf-card-hover { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.bf-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(52, 211, 153, 0.45);
+  box-shadow: 0 2px 4px rgba(2, 6, 23, 0.05), 0 16px 36px -16px rgba(13, 148, 136, 0.22);
+}
+
+/* Carte « héro » avec liseré dégradé */
+.bf-card-accent { position: relative; overflow: hidden; }
+.bf-card-accent::before {
+  content: '';
+  position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--bf-brand-from), var(--bf-brand-to), #38bdf8);
+}
+
+/* --- Texte dégradé de marque -------------------------------------- */
+.bf-gradient-text {
+  background: linear-gradient(92deg, var(--bf-brand-from), var(--bf-brand-to));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* --- Boutons ------------------------------------------------------- */
+.bf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  font-weight: 600; font-size: .875rem; line-height: 1.25rem;
+  border-radius: .75rem; padding: .625rem 1.1rem;
+  transition: all .15s ease; cursor: pointer; white-space: nowrap;
+}
+.bf-btn:active { transform: translateY(1px) scale(.99); }
+.bf-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.bf-btn-primary {
+  color: #022c22;
+  background: linear-gradient(92deg, var(--bf-brand-from), var(--bf-brand-to));
+  box-shadow: 0 8px 20px -8px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.bf-btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 26px -8px rgba(16, 185, 129, 0.65); }
+.bf-btn-dark { background: var(--bf-ink); color: #fff; box-shadow: 0 8px 20px -10px rgba(2,6,23,.5); }
+.bf-btn-dark:hover { background: #1e293b; }
+.bf-btn-ghost { background: #fff; color: #334155; border: 1px solid #e2e8f0; }
+.bf-btn-ghost:hover { border-color: #94a3b8; background: #f8fafc; }
+.bf-btn-danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
+.bf-btn-danger:hover { background: #fef2f2; border-color: #f87171; }
+
+/* --- Champs de formulaire ------------------------------------------ */
+.bf-input, .bf-select, .bf-textarea {
+  width: 100%; font-size: .875rem; color: #0f172a;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: .75rem;
+  padding: .625rem .875rem; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.bf-input::placeholder, .bf-textarea::placeholder { color: #94a3b8; }
+.bf-input:focus, .bf-select:focus, .bf-textarea:focus {
+  outline: none; border-color: var(--bf-brand-from);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
+}
+.bf-label { display: block; font-size: .8125rem; font-weight: 600; color: #475569; margin-bottom: .375rem; }
+.bf-hint { font-size: .75rem; color: #94a3b8; }
+
+/* --- Badges / pastilles -------------------------------------------- */
+.bf-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .6875rem; font-weight: 700; letter-spacing: .02em;
+  border-radius: 9999px; padding: .2rem .6rem;
+}
+.bf-badge-emerald { background: #d1fae5; color: #047857; }
+.bf-badge-blue { background: #dbeafe; color: #1d4ed8; }
+.bf-badge-amber { background: #fef3c7; color: #b45309; }
+.bf-badge-red { background: #fee2e2; color: #b91c1c; }
+.bf-badge-slate { background: #f1f5f9; color: #475569; }
+.bf-badge-violet { background: #ede9fe; color: #6d28d9; }
+
+/* --- Point de statut animé ----------------------------------------- */
+@keyframes bf-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .55); }
+  70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.bf-dot { width: .5rem; height: .5rem; border-radius: 9999px; display: inline-block; }
+.bf-dot-live { background: #10b981; animation: bf-pulse-ring 2s infinite; }
+
+/* --- Squelettes de chargement --------------------------------------- */
+@keyframes bf-shimmer { 0% { background-position: -460px 0; } 100% { background-position: 460px 0; } }
+.bf-skeleton {
+  border-radius: .6rem;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+  background-size: 920px 100%;
+  animation: bf-shimmer 1.5s linear infinite;
+}
+
+/* --- Apparition douce des blocs -------------------------------------- */
+@keyframes bf-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.bf-rise { animation: bf-rise .35s ease both; }
+.bf-rise-1 { animation-delay: .05s; } .bf-rise-2 { animation-delay: .12s; } .bf-rise-3 { animation-delay: .19s; }
+
+/* --- Flottement décoratif (landing / auth) ---------------------------- */
+@keyframes bf-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.bf-float { animation: bf-float 5.5s ease-in-out infinite; }
+
+/* --- Tableaux -------------------------------------------------------- */
+.bf-table th {
+  font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: #64748b; text-align: left; padding: .65rem 1rem; background: #f8fafc;
+}
+.bf-table th:first-child { border-radius: .6rem 0 0 .6rem; }
+.bf-table th:last-child { border-radius: 0 .6rem .6rem 0; }
+.bf-table td { padding: .7rem 1rem; font-size: .8125rem; color: #334155; border-bottom: 1px solid #f1f5f9; }
+.bf-table tbody tr { transition: background .12s ease; }
+.bf-table tbody tr:hover { background: #f8fafc; }
+
+/* --- Sélecteur de statut coloré --------------------------------------- */
+.bf-status-select {
+  font-size: .75rem; font-weight: 600; border-radius: 9999px;
+  padding: .3rem 1.8rem .3rem .8rem; border: 1.5px solid; cursor: pointer;
+  appearance: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right .7rem center;
+}
+.bf-status-pending { border-color: #fcd34d; color: #b45309; background-color: #fffbeb; }
+.bf-status-confirmed { border-color: #6ee7b7; color: #047857; background-color: #ecfdf5; }
+.bf-status-cancelled { border-color: #fca5a5; color: #b91c1c; background-color: #fef2f2; }
+
+/* --- Pilules de filtre -------------------------------------------------- */
+.bf-pill {
+  font-size: .8125rem; font-weight: 600; border-radius: 9999px;
+  padding: .42rem 1rem; border: 1px solid #e2e8f0; background: #fff; color: #475569;
+  transition: all .14s ease; cursor: pointer;
+}
+.bf-pill:hover { border-color: #94a3b8; }
+.bf-pill-active {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, #10b981, #0d9488);
+  box-shadow: 0 6px 16px -6px rgba(16, 185, 129, .5);
+}
